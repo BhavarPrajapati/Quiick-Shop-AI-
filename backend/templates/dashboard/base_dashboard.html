@@ -1,0 +1,471 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block tailwind_config %}
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          brand:    { 400:'#818cf8', 500:'#4648d4', 600:'#3a3cb8' },
+          accent:   { 400:'#a78bfa', 500:'#7c3aed' },
+          teal:     { 400:'#2dd4bf', 500:'#14b8a6' },
+          surface:  { DEFAULT:'#111224', low:'#0d0e1f', high:'#181930', card:'#141526', border:'rgba(255,255,255,0.07)' },
+          dark:     { 900:'#09091a', 800:'#0d0e20', 700:'#111224', 600:'#161729', 500:'#1a1b30' },
+          text:     { primary:'#e8e9f5', secondary:'rgba(255,255,255,0.55)', muted:'rgba(255,255,255,0.3)' },
+          success:  '#2dd4bf', warning:'#fbbf24', danger:'#f87171',
+        },
+        borderRadius: { DEFAULT:'4px',sm:'6px',md:'8px',lg:'12px',xl:'16px','2xl':'20px','3xl':'24px',full:'9999px' },
+        fontFamily:  { sans:['Inter','Geist','system-ui','sans-serif'] },
+        boxShadow: {
+          card:   '0 1px 3px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2)',
+          hover:  '0 8px 32px rgba(70,72,212,0.2)',
+          primary:'0 8px 24px -4px rgba(70,72,212,0.5)',
+          side:   '4px 0 40px rgba(0,0,0,0.4)',
+          top:    '0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.3)',
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  *,*::before,*::after{box-sizing:border-box;}
+
+  body{
+    font-family:'Inter','Geist',sans-serif;
+    background:#09091a;color:#e8e9f5;
+    min-height:100vh;
+  }
+
+  /* Background mesh */
+  .page-bg{
+    background:#09091a;
+    background-image:
+      radial-gradient(ellipse 50% 40% at 75% 8%, rgba(70,72,212,0.1) 0%, transparent 55%),
+      radial-gradient(ellipse 45% 35% at 15% 85%, rgba(124,58,237,0.07) 0%, transparent 55%);
+  }
+
+  /* Scrollbars */
+  .custom-scrollbar::-webkit-scrollbar{width:4px;}
+  .custom-scrollbar::-webkit-scrollbar-track{background:transparent;}
+  .custom-scrollbar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:99px;}
+  .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
+  .no-scrollbar::-webkit-scrollbar{display:none;}
+
+  /* Glass topbar */
+  .glass-top{
+    background:rgba(13,14,32,0.85);
+    backdrop-filter:blur(20px) saturate(150%);
+    -webkit-backdrop-filter:blur(20px) saturate(150%);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Sidebar */
+  .sidebar{
+    background:#0d0e20;
+    border-right:1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Nav items */
+  .nav-item{
+    display:flex;align-items:center;gap:11px;
+    padding:9px 12px;border-radius:11px;
+    font-size:13.5px;font-weight:500;color:rgba(255,255,255,0.45);
+    cursor:pointer;transition:all .18s ease;position:relative;text-decoration:none;
+  }
+  .nav-item:hover{background:rgba(70,72,212,0.1);color:rgba(255,255,255,0.85);}
+  .nav-item.active{background:rgba(70,72,212,0.18);color:#a5b4fc;font-weight:600;}
+  .nav-item.active::before{
+    content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+    width:3px;height:18px;background:#4648d4;border-radius:0 4px 4px 0;
+  }
+
+  /* Cards */
+  .card{
+    background:#141526;
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:18px;
+    transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+  }
+  .card:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(70,72,212,0.15);border-color:rgba(70,72,212,0.2);}
+
+  /* Metric cards */
+  .metric-card{
+    background:#141526;
+    border:2px solid rgba(255,255,255,0.06);
+    border-radius:18px;padding:20px 18px;
+    position:relative;overflow:hidden;
+    transition:transform .22s, box-shadow .22s, border-color .22s;cursor:pointer;
+  }
+  .metric-card::after{
+    content:'';position:absolute;top:0;left:0;right:0;
+    height:3px;border-radius:18px 18px 0 0;opacity:0;transition:opacity .22s;
+  }
+  .metric-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(70,72,212,0.18);border-color:rgba(70,72,212,0.3);}
+  .metric-card:hover::after{opacity:1;}
+  .mc-p::after  {background:linear-gradient(90deg,#4648d4,#7c3aed);}
+  .mc-a::after  {background:linear-gradient(90deg,#14b8a6,#06b6d4);}
+  .mc-w::after  {background:linear-gradient(90deg,#f59e0b,#f97316);}
+  .mc-d::after  {background:linear-gradient(90deg,#ef4444,#dc2626);}
+  .mc-r::after  {background:linear-gradient(90deg,#7c3aed,#4648d4);}
+  .mc-v::after  {background:linear-gradient(90deg,#0d9488,#14b8a6);}
+
+  /* Icon box */
+  .icon-box{
+    width:40px;height:40px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;margin-bottom:14px;
+    transition:transform .18s;
+  }
+  .metric-card:hover .icon-box{transform:scale(1.08);}
+
+  /* Feature cards */
+  .feat-card{
+    background:#141526;
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:20px;padding:22px;
+    transition:transform .25s, box-shadow .25s, border-color .22s;
+    position:relative;overflow:hidden;text-decoration:none;display:block;
+  }
+  .feat-card:hover{transform:translateY(-4px);box-shadow:0 14px 40px rgba(70,72,212,0.18);border-color:rgba(70,72,212,0.25);}
+  .feat-glow{
+    position:absolute;width:140px;height:140px;border-radius:50%;
+    filter:blur(50px);top:-40px;right:-40px;opacity:0;transition:opacity .3s;pointer-events:none;
+  }
+  .feat-card:hover .feat-glow{opacity:1;}
+
+  /* AI bar */
+  .ai-bar{
+    background:rgba(70,72,212,0.07);
+    border:1px solid rgba(70,72,212,0.18);
+    border-radius:22px;padding:24px;position:relative;overflow:hidden;
+  }
+  .ai-bar::before{
+    content:'';position:absolute;width:300px;height:300px;
+    background:radial-gradient(circle,rgba(70,72,212,0.1) 0%,transparent 70%);
+    top:-100px;right:-60px;pointer-events:none;
+  }
+
+  /* Today card */
+  .today-card{
+    background:linear-gradient(135deg,#1a1b5c 0%,#2e1065 100%);
+    border:1px solid rgba(70,72,212,0.25);
+    border-radius:20px;padding:22px;
+  }
+
+  /* Hero gradient */
+  .hero-card{
+    background:linear-gradient(135deg,#1e2070 0%,#3b1a8c 50%,#0a5c6b 100%);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:24px;position:relative;overflow:hidden;
+  }
+
+  /* Table */
+  .dark-table{background:#141526;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);}
+  .dark-table thead tr{background:rgba(255,255,255,0.03);}
+  .dark-table th{padding:12px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.25);}
+  .dark-table td{padding:13px 20px;border-top:1px solid rgba(255,255,255,0.05);}
+  .dark-table tbody tr:hover{background:rgba(70,72,212,0.05);}
+
+  /* Chips */
+  .chip{
+    padding:6px 13px;border-radius:99px;font-size:11.5px;font-weight:600;
+    cursor:pointer;transition:all .16s ease;white-space:nowrap;
+  }
+  .chip:hover{transform:translateY(-1px);}
+
+  /* Alert rows */
+  .alert-row{transition:background .12s;}
+  .alert-row:hover{background:rgba(70,72,212,0.06);}
+
+  /* Progress bars */
+  .progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#4648d4,#7c3aed);transition:width .7s cubic-bezier(.4,0,.2,1);}
+
+  /* Section labels */
+  .section-label{
+    font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:rgba(255,255,255,0.25);display:flex;align-items:center;gap:8px;margin-bottom:14px;
+  }
+  .section-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06);}
+
+  /* Input dark */
+  input[type=text],input[type=email],input[type=tel],input[type=number],input[type=date],textarea,select{
+    background:rgba(255,255,255,0.05) !important;
+    border:1px solid rgba(255,255,255,0.1) !important;
+    color:#e8e9f5 !important;
+    border-radius:12px !important;
+  }
+  input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.2) !important;}
+  input:focus,textarea:focus,select:focus{
+    border-color:rgba(70,72,212,0.5) !important;
+    box-shadow:0 0 0 3px rgba(70,72,212,0.12) !important;
+    outline:none !important;
+    background:rgba(255,255,255,0.07) !important;
+  }
+  select option{background:#141526;color:#e8e9f5;}
+
+  /* Animations */
+  @keyframes fade-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slide-in{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes glow-pulse{0%,100%{box-shadow:0 0 0 0 rgba(70,72,212,0.4)}50%{box-shadow:0 0 0 8px rgba(70,72,212,0)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+  .anim-slide{animation:slide-in .4s ease both;}
+  .anim-fade-up{animation:fade-up .4s ease both;}
+  .btn-glow{animation:glow-pulse 2.5s ease-in-out infinite;}
+  .float-icon{animation:float 3.5s ease-in-out infinite;}
+
+  .s1{animation-delay:.04s;} .s2{animation-delay:.08s;} .s3{animation-delay:.12s;}
+  .s4{animation-delay:.16s;} .s5{animation-delay:.20s;} .s6{animation-delay:.24s;}
+  .s7{animation-delay:.28s;} .s8{animation-delay:.32s;}
+
+  /* Badge colors */
+  .badge-success{background:rgba(20,184,166,0.12);color:#2dd4bf;border:1px solid rgba(20,184,166,0.2);}
+  .badge-warn   {background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.2);}
+  .badge-error  {background:rgba(239,68,68,0.12); color:#f87171;border:1px solid rgba(239,68,68,0.2);}
+  .badge-primary{background:rgba(70,72,212,0.15); color:#a5b4fc;border:1px solid rgba(70,72,212,0.25);}
+  .badge-outline{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.1);}
+</style>
+{% endblock %}
+
+{% block body_class %}{% endblock %}
+
+{% block body %}
+
+<!-- SIDEBAR -->
+<aside class="anim-slide sidebar h-screen w-[215px] fixed left-0 top-0 flex flex-col z-50">
+
+  <div class="px-5 pt-5 pb-4 flex items-center gap-3">
+    <!-- Quiick AI Logo -->
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden" style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 4px 14px rgba(70,72,212,0.45);">
+      <svg width="22" height="22" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Robot head body -->
+        <rect x="6" y="10" width="24" height="18" rx="6" fill="white" fill-opacity="0.95"/>
+        <!-- Eyes -->
+        <circle cx="13" cy="18" r="3" fill="#4648d4"/>
+        <circle cx="23" cy="18" r="3" fill="#4648d4"/>
+        <!-- Eye shine -->
+        <circle cx="14.2" cy="16.8" r="1" fill="white"/>
+        <circle cx="24.2" cy="16.8" r="1" fill="white"/>
+        <!-- Antenna -->
+        <line x1="18" y1="10" x2="18" y2="5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="18" cy="4" r="2" fill="#a78bfa"/>
+        <!-- Mouth smile -->
+        <path d="M13 23 Q18 27 23 23" stroke="#4648d4" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+        <!-- Ears -->
+        <rect x="2" y="15" width="4" height="6" rx="2" fill="white" fill-opacity="0.8"/>
+        <rect x="30" y="15" width="4" height="6" rx="2" fill="white" fill-opacity="0.8"/>
+        <!-- Bolt on forehead -->
+        <path d="M20 11.5 L17.5 15 L19.5 15 L17 19 L20.5 14.5 L18.5 14.5Z" fill="#fbbf24" opacity="0.9"/>
+      </svg>
+    </div>
+    <div>
+      <p class="text-[14px] font-black leading-none tracking-tight" style="background:linear-gradient(135deg,#818cf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Quiick AI</p>
+      <p class="text-[9px] uppercase tracking-[.13em] text-white/25 mt-0.5">Smart Store</p>
+    </div>
+  </div>
+
+  {% if current_shop %}
+  <div class="mx-3 mb-4 px-3 py-2.5 rounded-xl" style="background:rgba(70,72,212,0.1);border:1px solid rgba(70,72,212,0.18);">
+    <p class="text-[9px] uppercase tracking-wider text-white/25 mb-0.5">Active Shop</p>
+    <p class="text-[13px] font-bold text-white leading-tight truncate">{{ current_shop.name }}</p>
+    <div class="flex items-center justify-between mt-1">
+      <span class="text-[10px] text-white/30">{{ current_shop.shop_type_label }}</span>
+      <a href="{% url 'core:onboarding_start' %}" class="text-[10px] font-semibold text-brand-400 hover:underline">Switch</a>
+    </div>
+  </div>
+  {% endif %}
+
+  {% with active=active_nav %}
+  <nav class="flex-1 px-3 space-y-0.5 overflow-y-auto no-scrollbar">
+    <p class="px-3 pt-3 pb-1.5 text-[9px] uppercase tracking-[.1em] text-white/20 font-bold">Main</p>
+    <a href="{% url 'dashboard:main' %}" class="nav-item {% if active == 'dashboard' %}active{% endif %}">
+      <span class="material-symbols-outlined text-[19px]" {% if active == 'dashboard' %}style="font-variation-settings:'FILL' 1;"{% endif %}>dashboard</span>Dashboard
+    </a>
+    <a href="{% url 'dashboard:inventory' %}" class="nav-item {% if active == 'inventory' %}active{% endif %}">
+      <span class="material-symbols-outlined text-[19px]" {% if active == 'inventory' %}style="font-variation-settings:'FILL' 1;"{% endif %}>inventory_2</span>Inventory
+    </a>
+    <a href="{% url 'dashboard:sales' %}" class="nav-item {% if active == 'sales' %}active{% endif %}">
+      <span class="material-symbols-outlined text-[19px]" {% if active == 'sales' %}style="font-variation-settings:'FILL' 1;"{% endif %}>payments</span>Sales
+    </a>
+    <a href="{% url 'dashboard:analytics' %}" class="nav-item {% if active == 'analytics' %}active{% endif %}">
+      <span class="material-symbols-outlined text-[19px]" {% if active == 'analytics' %}style="font-variation-settings:'FILL' 1;"{% endif %}>leaderboard</span>Analytics
+    </a>
+    <p class="px-3 pt-4 pb-1.5 text-[9px] uppercase tracking-[.1em] text-white/20 font-bold">Commerce</p>
+    <a href="{% url 'dashboard:suppliers' %}" class="nav-item {% if active == 'customers' %}active{% endif %}">
+      <span class="material-symbols-outlined text-[19px]" {% if active == 'customers' %}style="font-variation-settings:'FILL' 1;"{% endif %}>storefront</span>Suppliers
+    </a>
+    <a href="{% url 'dashboard:ai_assistant' %}" class="nav-item {% if active == 'ai_insights' %}active{% endif %}">
+      <span class="material-symbols-outlined text-[19px]" {% if active == 'ai_insights' %}style="font-variation-settings:'FILL' 1;"{% endif %}>psychology</span>AI Insights
+    </a>
+  </nav>
+  {% endwith %}
+
+  <div class="px-3 pb-5 pt-3 space-y-1" style="border-top:1px solid rgba(255,255,255,0.05);">
+    <a href="{% url 'dashboard:product_add' %}"
+       class="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-white text-[13px] font-semibold mb-2 transition-all hover:opacity-90 active:scale-95"
+       style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 4px 18px rgba(70,72,212,0.35);">
+      <span class="material-symbols-outlined text-[16px]">add</span>Add Product
+    </a>
+    <a href="#" class="nav-item"><span class="material-symbols-outlined text-[19px]">settings</span>Settings</a>
+    <a href="#" class="nav-item"><span class="material-symbols-outlined text-[19px]">help_outline</span>Support</a>
+  </div>
+</aside>
+
+<!-- TOPBAR -->
+<header class="glass-top fixed top-0 left-[215px] right-0 h-[58px] z-40 flex items-center justify-between px-7">
+  <div class="relative group flex-1 max-w-xs">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-white/25 group-focus-within:text-brand-400 transition-colors">search</span>
+    <input class="w-full h-[34px] rounded-xl pl-9 pr-4 text-[13px] placeholder:text-white/20"
+           style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#e8e9f5;"
+           placeholder="{% block search_placeholder %}Search...{% endblock %}" type="text"/>
+  </div>
+
+  <div class="flex items-center gap-4 ml-6">
+    <div class="flex items-center gap-1">
+      <button class="w-8 h-8 rounded-xl flex items-center justify-center text-white/35 hover:text-white/80 hover:bg-white/6 transition-all relative">
+        <span class="material-symbols-outlined text-[19px]">notifications</span>
+        <span class="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+      </button>
+      <button class="w-8 h-8 rounded-xl flex items-center justify-center text-white/35 hover:text-white/80 hover:bg-white/6 transition-all">
+        <span class="material-symbols-outlined text-[19px]">chat_bubble</span>
+      </button>
+      <button class="w-8 h-8 rounded-xl flex items-center justify-center text-white/35 hover:text-white/80 hover:bg-white/6 transition-all">
+        <span class="material-symbols-outlined text-[19px]">settings</span>
+      </button>
+    </div>
+    <div class="w-px h-5" style="background:rgba(255,255,255,0.08);"></div>
+    <div class="flex items-center gap-3">
+      <div class="text-right">
+        <p class="text-[12px] font-semibold text-white leading-none">{{ user_display_name|default:"Alex Rivera" }}</p>
+        <p class="text-[10px] text-white/30 mt-0.5">{{ user_role|default:"Store Manager" }}</p>
+      </div>
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-[11px]"
+           style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 3px 12px rgba(70,72,212,0.4);">
+        {{ user_initials|default:"QA" }}
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- CONTENT -->
+<div class="ml-[215px] pt-[58px] min-h-screen page-bg relative" style="z-index:1;">
+  {% block dashboard_content %}{% endblock %}
+</div>
+
+{% endblock body %}
+
+{% block extra_js %}
+<script>
+/* ── Particle canvas background — stars + dots + connections ── */
+(function(){
+  let canvas = document.getElementById('bg-canvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'bg-canvas';
+    canvas.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;';
+    document.body.prepend(canvas);
+  }
+  const ctx = canvas.getContext('2d');
+  let W, H, pts = [], stars = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', function() { resize(); initParticles(); });
+
+  const COLS = [
+    'rgba(70,72,212,',
+    'rgba(124,58,237,',
+    'rgba(20,184,166,',
+    'rgba(129,140,248,'
+  ];
+
+  function initParticles() {
+    pts = [];
+    stars = [];
+
+    /* Moving dot particles with connecting lines */
+    for (let i = 0; i < 55; i++) {
+      pts.push({
+        x:  Math.random() * W,
+        y:  Math.random() * H,
+        r:  Math.random() * 1.6 + 0.3,
+        vx: (Math.random() - 0.5) * 0.28,
+        vy: (Math.random() - 0.5) * 0.28,
+        a:  Math.random() * 0.45 + 0.1,
+        c:  COLS[Math.floor(Math.random() * COLS.length)]
+      });
+    }
+
+    /* Static star sparkles (twinkle only) */
+    for (let i = 0; i < 80; i++) {
+      stars.push({
+        x:     Math.random() * W,
+        y:     Math.random() * H,
+        r:     Math.random() * 1.1 + 0.2,
+        alpha: Math.random(),
+        speed: Math.random() * 0.012 + 0.004,
+        dir:   Math.random() > 0.5 ? 1 : -1,
+        min:   0.05,
+        max:   Math.random() * 0.55 + 0.15,
+      });
+    }
+  }
+  initParticles();
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    /* ── Twinkling stars ── */
+    stars.forEach(s => {
+      s.alpha += s.speed * s.dir;
+      if (s.alpha >= s.max) { s.alpha = s.max; s.dir = -1; }
+      if (s.alpha <= s.min) { s.alpha = s.min; s.dir =  1; }
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,' + s.alpha + ')';
+      ctx.fill();
+    });
+
+    /* ── Moving colored dots ── */
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W;
+      if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H;
+      if (p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.c + p.a + ')';
+      ctx.fill();
+    });
+
+    /* ── Connecting lines between nearby dots ── */
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x;
+        const dy = pts[i].y - pts[j].y;
+        const d  = Math.sqrt(dx * dx + dy * dy);
+        if (d < 115) {
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.strokeStyle = 'rgba(70,72,212,' + (0.055 * (1 - d / 115)) + ')';
+          ctx.lineWidth = 0.55;
+          ctx.stroke();
+        }
+      }
+    }
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+{% endblock %}

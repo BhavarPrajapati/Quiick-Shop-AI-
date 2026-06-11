@@ -1,0 +1,380 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block search_placeholder %}Search products, sales, suppliers...{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .stat-num{font-size:clamp(22px,2.5vw,28px);font-weight:800;line-height:1;color:#e8e9f5;}
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="px-7 py-6 max-w-[1240px] mx-auto space-y-6">
+
+  <!-- HERO CARD -->
+  <div class="hero-card anim-fade-up">
+    <div class="absolute w-72 h-72 rounded-full pointer-events-none -top-16 -right-10" style="background:radial-gradient(circle,rgba(255,255,255,0.06),transparent 70%);"></div>
+    <div class="absolute w-48 h-48 rounded-full pointer-events-none bottom-[-40px] right-[30%]" style="background:radial-gradient(circle,rgba(255,255,255,0.03),transparent 70%);"></div>
+    <div class="relative px-7 py-6 flex flex-wrap items-center justify-between gap-5">
+      <div class="flex items-center gap-5">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white shrink-0 float-icon" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);">
+          {% if current_shop.is_grocery %}<span class="material-symbols-outlined text-[26px]" style="font-variation-settings:'FILL' 1;">local_grocery_store</span>
+          {% elif current_shop.is_cloths %}<span class="material-symbols-outlined text-[26px]" style="font-variation-settings:'FILL' 1;">checkroom</span>
+          {% else %}<span class="material-symbols-outlined text-[26px]" style="font-variation-settings:'FILL' 1;">devices</span>{% endif %}
+        </div>
+        <div>
+          <div class="flex items-center gap-3 flex-wrap mb-1">
+            <h1 class="text-[20px] font-black text-white tracking-tight">{{ current_shop.name }}</h1>
+            <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full" style="background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9);border:1px solid rgba(255,255,255,0.2);">{{ current_shop.shop_type_label }}</span>
+          </div>
+          {% if current_shop.owner_name %}<p class="text-white/60 text-sm">Owner: <span class="text-white font-semibold">{{ current_shop.owner_name }}</span>{% if current_shop.phone_number %} &nbsp;·&nbsp; {{ current_shop.phone_number }}{% endif %}</p>{% endif %}
+          {% if current_shop.complete_address %}<p class="text-white/35 text-xs mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">location_on</span>{{ current_shop.complete_address|truncatechars:65 }}</p>{% endif %}
+        </div>
+      </div>
+      <div class="flex gap-3 flex-wrap">
+        <a href="{% url 'dashboard:product_add' %}" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95" style="background:rgba(255,255,255,0.95);color:#4648d4;box-shadow:0 4px 14px rgba(0,0,0,0.2);">
+          <span class="material-symbols-outlined text-[16px]">add</span>Add Product
+        </a>
+        <a href="{% url 'dashboard:supplier_add' %}" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:bg-white/20" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);">
+          <span class="material-symbols-outlined text-[16px]">storefront</span>Add Supplier
+        </a>
+        <a href="{% url 'dashboard:ai_assistant' %}" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:bg-white/20" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);">
+          <span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1;">psychology</span>AI Chat
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 METRIC CARDS -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    <a href="{% url 'dashboard:inventory' %}" class="metric-card mc-p anim-fade-up s1 block">
+      <div class="icon-box" style="background:rgba(70,72,212,0.15);"><span class="material-symbols-outlined text-brand-400 text-[19px]" style="font-variation-settings:'FILL' 1;">inventory_2</span></div>
+      <p class="stat-num">{{ total_products }}</p>
+      <p class="text-[11px] font-medium mt-1.5" style="color:rgba(255,255,255,0.3);">Total Products</p>
+    </a>
+    <a href="{% url 'dashboard:inventory' %}?status=active" class="metric-card mc-a anim-fade-up s2 block">
+      <div class="icon-box" style="background:rgba(20,184,166,0.12);"><span class="material-symbols-outlined text-teal-400 text-[19px]" style="font-variation-settings:'FILL' 1;">check_circle</span></div>
+      <p class="stat-num">{{ active_count }}</p>
+      <p class="text-[11px] font-medium mt-1.5" style="color:rgba(255,255,255,0.3);">Active</p>
+    </a>
+    <a href="{% url 'dashboard:inventory' %}?status=low_stock" class="metric-card mc-w anim-fade-up s3 block">
+      <div class="icon-box" style="background:rgba(251,191,36,0.1);"><span class="material-symbols-outlined text-[19px]" style="color:#fbbf24;font-variation-settings:'FILL' 1;">warning</span></div>
+      <p class="stat-num {% if low_stock_count > 0 %}" style="color:#fbbf24;{% else %}"{% endif %}>{{ low_stock_count }}</p>
+      <p class="text-[11px] font-medium mt-1.5" style="color:rgba(255,255,255,0.3);">Low Stock</p>
+      {% if low_stock_count > 0 %}<span class="absolute top-3 right-3 w-2 h-2 bg-amber-400 rounded-full animate-ping opacity-75"></span><span class="absolute top-3 right-3 w-2 h-2 bg-amber-400 rounded-full"></span>{% endif %}
+    </a>
+    <a href="{% url 'dashboard:inventory' %}?status=out_of_stock" class="metric-card mc-d anim-fade-up s4 block">
+      <div class="icon-box" style="background:rgba(239,68,68,0.1);"><span class="material-symbols-outlined text-[19px]" style="color:#f87171;font-variation-settings:'FILL' 1;">remove_shopping_cart</span></div>
+      <p class="stat-num {% if out_of_stock_count > 0 %}" style="color:#f87171;{% else %}"{% endif %}>{{ out_of_stock_count }}</p>
+      <p class="text-[11px] font-medium mt-1.5" style="color:rgba(255,255,255,0.3);">Out of Stock</p>
+      {% if out_of_stock_count > 0 %}<span class="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full animate-ping opacity-75"></span><span class="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full"></span>{% endif %}
+    </a>
+    <a href="{% url 'dashboard:sales' %}" class="metric-card mc-r anim-fade-up s5 block">
+      <div class="icon-box" style="background:rgba(124,58,237,0.15);"><span class="material-symbols-outlined text-accent-400 text-[19px]" style="font-variation-settings:'FILL' 1;">payments</span></div>
+      <p class="text-[18px] font-black text-white leading-none">₹{{ total_revenue|floatformat:0 }}</p>
+      <p class="text-[11px] font-medium mt-1.5" style="color:rgba(255,255,255,0.3);">Total Revenue</p>
+    </a>
+    <div class="metric-card mc-v anim-fade-up s6">
+      <div class="icon-box" style="background:rgba(20,184,166,0.1);"><span class="material-symbols-outlined text-teal-400 text-[19px]" style="font-variation-settings:'FILL' 1;">account_balance_wallet</span></div>
+      <p class="text-[18px] font-black text-white leading-none">₹{{ total_inventory_value|floatformat:0 }}</p>
+      <p class="text-[11px] font-medium mt-1.5" style="color:rgba(255,255,255,0.3);">Inventory Value</p>
+    </div>
+  </div>
+
+  <!-- AI COMMAND BAR -->
+  <div class="ai-bar anim-fade-up s3">
+    <div class="relative">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 btn-glow" style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 6px 20px rgba(70,72,212,0.4);">
+            <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1;">psychology</span>
+          </div>
+          <div>
+            <p class="font-bold text-white text-[14px]">AI Stock Assistant</p>
+            <p class="text-[12px]" style="color:rgba(255,255,255,0.4);">Sell, restock, or check stock in plain language — applied instantly.</p>
+          </div>
+        </div>
+        <a href="{% url 'dashboard:ai_assistant' %}" class="flex items-center gap-1 text-xs text-brand-400 font-bold hover:underline">
+          Full Chat <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+        </a>
+      </div>
+      <form method="post" action="{% url 'dashboard:ai_assistant' %}" class="flex gap-3 mb-4">
+        {% csrf_token %}
+        <div class="flex-1 relative">
+          <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-400 text-[18px]">magic_button</span>
+          <input id="ai-input" type="text" name="message" autocomplete="off"
+                 placeholder='e.g. "sell 10 shirts", "restock 50 jeans", "check low stock"'
+                 class="w-full h-11 pl-11 pr-4 rounded-2xl text-[13px]"
+                 style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e8e9f5;"/>
+        </div>
+        <button type="submit" class="h-11 px-5 rounded-2xl text-white text-[13px] font-bold flex items-center gap-2 transition-all hover:opacity-90 active:scale-95 whitespace-nowrap"
+                style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 4px 16px rgba(70,72,212,0.4);">
+          <span class="material-symbols-outlined text-[17px]">send</span>Send
+        </button>
+      </form>
+      <div class="flex gap-2 flex-wrap">
+        {% for cmd, label in ai_suggestions %}
+        <button onclick="document.getElementById('ai-input').value='{{ cmd }}';document.getElementById('ai-input').focus();"
+                class="chip" style="background:rgba(70,72,212,0.12);border:1px solid rgba(70,72,212,0.25);color:#a5b4fc;">{{ label }}</button>
+        {% endfor %}
+        <button onclick="document.getElementById('ai-input').value='show sales';document.getElementById('ai-input').focus();"
+                class="chip" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);color:#c4b5fd;">Show Sales</button>
+        <button onclick="document.getElementById('ai-input').value='check low stock';document.getElementById('ai-input').focus();"
+                class="chip" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:#fbbf24;">⚠ Low Stock</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+    <!-- LEFT 2/3 -->
+    <div class="xl:col-span-2 space-y-5">
+
+      <!-- Quick Access -->
+      <p class="section-label"><span class="material-symbols-outlined text-brand-400 text-[16px]">grid_view</span>Quick Access</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <a href="{% url 'dashboard:inventory' %}" class="feat-card anim-fade-up s2">
+          <div class="feat-glow" style="background:rgba(70,72,212,0.4);"></div>
+          <div class="relative flex items-start justify-between mb-4">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:rgba(70,72,212,0.15);"><span class="material-symbols-outlined text-brand-400 text-[22px]" style="font-variation-settings:'FILL' 1;">inventory_2</span></div>
+            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full badge-outline">{{ total_products }} items</span>
+          </div>
+          <p class="font-bold text-white text-[14px] mb-1">Inventory</p>
+          <p class="text-[12px] leading-relaxed" style="color:rgba(255,255,255,0.35);">View, add and manage all products, stock and categories.</p>
+          <div class="flex gap-4 mt-4 text-[11px] font-bold">
+            <span style="color:#2dd4bf;">{{ active_count }} Active</span>
+            {% if low_stock_count > 0 %}<span style="color:#fbbf24;">{{ low_stock_count }} Low</span>{% endif %}
+            {% if out_of_stock_count > 0 %}<span style="color:#f87171;">{{ out_of_stock_count }} Out</span>{% endif %}
+          </div>
+        </a>
+
+        <a href="{% url 'dashboard:sales' %}" class="feat-card anim-fade-up s3">
+          <div class="feat-glow" style="background:rgba(124,58,237,0.4);"></div>
+          <div class="relative flex items-start justify-between mb-4">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:rgba(124,58,237,0.12);"><span class="material-symbols-outlined text-accent-400 text-[22px]" style="font-variation-settings:'FILL' 1;">payments</span></div>
+            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full badge-outline">Today: {{ today_sales_count }}</span>
+          </div>
+          <p class="font-bold text-white text-[14px] mb-1">Sales</p>
+          <p class="text-[12px] leading-relaxed" style="color:rgba(255,255,255,0.35);">Transactions and AI stock movement history.</p>
+          <div class="flex gap-4 mt-4 text-[11px] font-bold">
+            <span style="color:#a78bfa;">₹{{ total_revenue|floatformat:0 }} Total</span>
+            <span style="color:rgba(255,255,255,0.3);">Today ₹{{ today_revenue|floatformat:0 }}</span>
+          </div>
+        </a>
+
+        <a href="{% url 'dashboard:suppliers' %}" class="feat-card anim-fade-up s4">
+          <div class="feat-glow" style="background:rgba(20,184,166,0.3);"></div>
+          <div class="relative flex items-start justify-between mb-4">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:rgba(20,184,166,0.1);"><span class="material-symbols-outlined text-teal-400 text-[22px]" style="font-variation-settings:'FILL' 1;">storefront</span></div>
+            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full badge-outline">{{ total_suppliers }} suppliers</span>
+          </div>
+          <p class="font-bold text-white text-[14px] mb-1">Suppliers</p>
+          <p class="text-[12px] leading-relaxed" style="color:rgba(255,255,255,0.35);">Companies &amp; agencies you buy from. Purchase orders.</p>
+          <div class="flex gap-4 mt-4 text-[11px] font-bold">
+            {% if pending_orders > 0 %}<span style="color:#fbbf24;" class="flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">schedule</span>{{ pending_orders }} pending</span>
+            {% else %}<span style="color:#2dd4bf;">All up to date</span>{% endif %}
+          </div>
+        </a>
+
+        <a href="{% url 'dashboard:analytics' %}" class="feat-card anim-fade-up s5">
+          <div class="feat-glow" style="background:rgba(70,72,212,0.35);"></div>
+          <div class="relative flex items-start justify-between mb-4">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:rgba(70,72,212,0.12);"><span class="material-symbols-outlined text-brand-400 text-[22px]" style="font-variation-settings:'FILL' 1;">leaderboard</span></div>
+            <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full badge-outline">{{ top_categories|length }} categories</span>
+          </div>
+          <p class="font-bold text-white text-[14px] mb-1">Analytics</p>
+          <p class="text-[12px] leading-relaxed" style="color:rgba(255,255,255,0.35);">Category breakdown, stock health and distribution.</p>
+          <div class="flex gap-4 mt-4 text-[11px] font-bold">
+            <span style="color:#818cf8;">₹{{ total_inventory_value|floatformat:0 }} value</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Categories -->
+      {% if top_categories %}
+      <div class="card p-5 anim-fade-up s6">
+        <div class="flex items-center justify-between mb-4">
+          <p class="font-bold text-white text-[13px] flex items-center gap-2">
+            <span class="material-symbols-outlined text-brand-400 text-[16px]">category</span>Category Breakdown
+          </p>
+          <a href="{% url 'dashboard:inventory' %}" class="text-[11px] text-brand-400 font-bold hover:underline">View All</a>
+        </div>
+        <div class="space-y-4">
+          {% for cat in top_categories %}
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-bold shrink-0" style="background:rgba(70,72,212,0.12);color:#818cf8;">{{ cat.name|slice:":2"|upper }}</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-1.5">
+                <p class="text-[12px] font-semibold text-white truncate">{{ cat.name }}</p>
+                <span class="text-[10px] ml-2 shrink-0" style="color:rgba(255,255,255,0.25);">{{ cat.product_count }}p · {{ cat.total_stock|default:0 }}u</span>
+              </div>
+              <div class="h-1.5 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.06);">
+                {% if total_products > 0 %}<div class="progress-fill" style="width:{% widthratio cat.product_count total_products 100 %}%;"></div>{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Transactions -->
+      {% if recent_transactions %}
+      <div class="dark-table anim-fade-up s7">
+        <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <p class="font-bold text-white text-[13px] flex items-center gap-2">
+            <span class="material-symbols-outlined text-accent-400 text-[16px]">receipt_long</span>Recent Transactions
+          </p>
+          <a href="{% url 'dashboard:sales' %}" class="text-[11px] text-brand-400 font-bold hover:underline flex items-center gap-1">
+            View All <span class="material-symbols-outlined text-[12px]">arrow_forward</span>
+          </a>
+        </div>
+        <table class="w-full">
+          <thead><tr>
+            <th>Txn ID</th><th>Customer</th><th>Product</th><th>Amount</th><th>Status</th>
+          </tr></thead>
+          <tbody>
+            {% for txn in recent_transactions %}
+            <tr>
+              <td class="text-[12px] font-bold text-white font-mono">{{ txn.txn_id }}</td>
+              <td>
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style="background:rgba(70,72,212,0.2);color:#818cf8;">{% if txn.customer %}{{ txn.customer.initials }}{% else %}??{% endif %}</div>
+                  <span class="text-[12px] text-white">{% if txn.customer %}{{ txn.customer.name }}{% else %}—{% endif %}</span>
+                </div>
+              </td>
+              <td class="text-[12px] max-w-[120px] truncate" style="color:rgba(255,255,255,0.4);">{% if txn.product %}{{ txn.product.name }}{% else %}—{% endif %}</td>
+              <td class="text-[12px] font-bold text-white">₹{{ txn.amount }}</td>
+              <td>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold
+                  {% if txn.status == 'Completed' %}badge-success{% elif txn.status == 'Processing' %}badge-primary{% elif txn.status == 'Shipped' %}badge-outline{% else %}badge-error{% endif %}">{{ txn.status }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT 1/3 -->
+    <div class="space-y-5">
+
+      <!-- Today card -->
+      <div class="today-card anim-fade-up s2">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15);"><span class="material-symbols-outlined text-white text-[17px]" style="font-variation-settings:'FILL' 1;">today</span></div>
+          <p class="font-bold text-white text-[13px]">Today's Summary</p>
+        </div>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center py-2.5" style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <span class="text-white/50 text-[12px]">Sales Transactions</span>
+            <span class="text-white font-bold text-[13px]">{{ today_sales_count }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2.5" style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <span class="text-white/50 text-[12px]">Today's Revenue</span>
+            <span class="text-white font-bold text-[13px]">₹{{ today_revenue|floatformat:2 }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2.5">
+            <span class="text-white/50 text-[12px]">Pending Orders</span>
+            <span class="font-bold text-[13px] {% if pending_orders > 0 %}text-amber-400{% else %}text-white{% endif %}">{{ pending_orders }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock Alerts -->
+      <div class="card overflow-hidden anim-fade-up s3">
+        <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-[17px]" style="color:#fbbf24;font-variation-settings:'FILL' 1;">notification_important</span>
+            <p class="font-bold text-white text-[13px]">Stock Alerts</p>
+          </div>
+          {% if low_items %}<span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold badge-error">{{ low_items|length }}</span>{% endif %}
+        </div>
+        {% if low_items %}
+        <div>
+          {% for item in low_items %}
+          <a href="{% url 'dashboard:product_edit' item.pk %}" class="alert-row flex items-center gap-3 px-5 py-3.5 group" style="border-bottom:1px solid rgba(255,255,255,0.04);">
+            <div class="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 {% if item.stock == 0 %}badge-error{% else %}" style="background:rgba(251,191,36,0.12);color:#fbbf24;{% endif %}">
+              <span class="material-symbols-outlined text-[14px]">{% if item.stock == 0 %}block{% else %}warning{% endif %}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[12px] font-semibold text-white truncate">{{ item.name }}</p>
+              <p class="text-[10px] font-semibold {% if item.stock == 0 %}text-red-400{% else %}text-amber-400{% endif %}">{% if item.stock == 0 %}Out of stock{% else %}{{ item.stock }} left{% endif %}</p>
+            </div>
+            <span class="material-symbols-outlined text-[13px] text-white/20 group-hover:text-brand-400 transition-colors">chevron_right</span>
+          </a>
+          {% endfor %}
+        </div>
+        <div class="px-5 py-3" style="background:rgba(255,255,255,0.02);">
+          <a href="{% url 'dashboard:inventory' %}?status=low_stock" class="text-[11px] text-brand-400 font-bold hover:underline">View all →</a>
+        </div>
+        {% else %}
+        <div class="px-5 py-8 text-center">
+          <span class="material-symbols-outlined text-[34px]" style="color:rgba(20,184,166,0.3);">check_circle</span>
+          <p class="text-[12px] font-medium mt-2" style="color:rgba(255,255,255,0.3);">All stock levels healthy</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- AI Actions -->
+      <div class="card overflow-hidden anim-fade-up s4">
+        <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-brand-400 text-[17px]" style="font-variation-settings:'FILL' 1;">psychology</span>
+            <p class="font-bold text-white text-[13px]">AI Actions</p>
+          </div>
+          <a href="{% url 'dashboard:sales' %}?tab=ai_logs" class="text-[10px] text-brand-400 font-bold hover:underline">All Logs</a>
+        </div>
+        {% if recent_stock_logs %}
+        <div>
+          {% for log in recent_stock_logs %}
+          <div class="alert-row flex items-center gap-3 px-5 py-3" style="border-bottom:1px solid rgba(255,255,255,0.04);">
+            <div class="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 {% if log.action == 'sell' %}badge-error{% else %}badge-success{% endif %}">
+              <span class="material-symbols-outlined text-[13px]">{% if log.action == 'sell' %}trending_down{% else %}add_circle{% endif %}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[11px] font-semibold text-white truncate">{% if log.product %}{{ log.product.name }}{% else %}Unknown{% endif %}</p>
+              <p class="text-[10px]" style="color:rgba(255,255,255,0.3);">{% if log.action == 'sell' %}-{% else %}+{% endif %}{{ log.quantity }} · {{ log.created_at|timesince }} ago</p>
+            </div>
+            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full {% if log.action == 'sell' %}badge-error{% else %}badge-success{% endif %}">
+              {% if log.action == 'sell' %}SOLD{% else %}ADDED{% endif %}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-5 py-8 text-center">
+          <span class="material-symbols-outlined text-[34px]" style="color:rgba(255,255,255,0.1);">history</span>
+          <p class="text-[12px] font-medium mt-2" style="color:rgba(255,255,255,0.25);">No AI actions yet</p>
+          <p class="text-[10px] mt-0.5" style="color:rgba(255,255,255,0.15);">Use the command bar above</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  {% if not has_inventory %}
+  <div class="anim-scale-in text-center py-14" style="background:rgba(255,255,255,0.02);border:2px dashed rgba(70,72,212,0.15);border-radius:24px;">
+    <div class="w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center float-icon" style="background:rgba(70,72,212,0.12);"><span class="material-symbols-outlined text-brand-400 text-[28px]" style="font-variation-settings:'FILL' 1;">add_business</span></div>
+    <p class="font-black text-white text-[17px] mb-2">No products yet</p>
+    <p class="text-[13px] mb-7 max-w-sm mx-auto leading-relaxed" style="color:rgba(255,255,255,0.35);">Add your first product to unlock inventory tracking, AI insights, and sales analytics.</p>
+    <div class="flex justify-center gap-4 flex-wrap">
+      <a href="{% url 'dashboard:product_add' %}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white text-[13px] font-bold hover:opacity-90 transition-all" style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 6px 20px rgba(70,72,212,0.4);">
+        <span class="material-symbols-outlined text-[17px]">add</span>Add First Product
+      </a>
+      <a href="{% url 'dashboard:ai_assistant' %}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white text-[13px] font-semibold transition-all" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);">
+        <span class="material-symbols-outlined text-[17px]">psychology</span>Try AI Assistant
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,224 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block search_placeholder %}Search products, SKU, category...{% endblock %}
+
+{% block extra_css %}{{ block.super }}
+<style>
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .au1{animation:fadeUp .4s ease both;} .au2{animation:fadeUp .4s .06s ease both;}
+  .au3{animation:fadeUp .4s .12s ease both;} .au4{animation:fadeUp .4s .18s ease both;}
+
+  .pg-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-size:12px;font-weight:700;transition:all .15s;}
+  .pg-btn:hover{background:rgba(70,72,212,0.2);color:#a5b4fc;}
+  .pg-btn.active{background:#4648d4;color:#fff;}
+  .pg-btn.disabled{opacity:0.3;cursor:not-allowed;}
+
+  .filter-bar input,.filter-bar select{background:rgba(255,255,255,0.05)!important;border:1px solid rgba(255,255,255,0.1)!important;color:#e8e9f5!important;border-radius:10px!important;padding:8px 12px!important;font-size:13px!important;outline:none!important;}
+  .filter-bar input:focus,.filter-bar select:focus{border-color:rgba(70,72,212,0.5)!important;box-shadow:0 0 0 3px rgba(70,72,212,0.1)!important;}
+  .filter-bar select option{background:#141526;}
+
+  .status-active{background:rgba(20,184,166,0.12);color:#2dd4bf;border:1px solid rgba(20,184,166,0.2);}
+  .status-low{background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.2);}
+  .status-out{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.2);}
+
+  .product-row{transition:background .12s;}
+  .product-row:hover{background:rgba(70,72,212,0.05);}
+  .row-actions{opacity:0;transition:opacity .15s;}
+  .product-row:hover .row-actions{opacity:1;}
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="px-7 py-6 max-w-[1240px] mx-auto space-y-5 relative z-10">
+
+  <!-- Messages -->
+  {% if messages %}
+  <div class="space-y-2 au1">
+    {% for message in messages %}
+    <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium {% if message.tags == 'success' %}badge-success{% else %}badge-error{% endif %}">
+      <span class="material-symbols-outlined text-[17px]">{% if message.tags == 'success' %}check_circle{% else %}error{% endif %}</span>
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-4 au1">
+    <div>
+      <h1 class="text-[22px] font-black text-white tracking-tight">Inventory</h1>
+      <p class="text-[12px] mt-0.5" style="color:rgba(255,255,255,0.4);">
+        {% if current_shop %}<span class="text-brand-400 font-semibold">{{ current_shop.name }}</span> · {% endif %}Manage your products and stock
+      </p>
+    </div>
+    <div class="flex gap-3">
+      <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-white transition-all hover:bg-white/10" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
+        <span class="material-symbols-outlined text-[17px]">file_upload</span>Export
+      </button>
+      <a href="{% url 'dashboard:product_add' %}" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:opacity-90 active:scale-95" style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 4px 16px rgba(70,72,212,0.4);">
+        <span class="material-symbols-outlined text-[17px]">add</span>Add Product
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 au2">
+    <div class="card p-5">
+      <p class="text-[9px] uppercase tracking-[.12em] font-bold mb-2" style="color:rgba(255,255,255,0.25);">Total Products</p>
+      <p class="text-[28px] font-black text-white leading-none">{{ inventory_summary.total_products }}</p>
+    </div>
+    <div class="card p-5">
+      <p class="text-[9px] uppercase tracking-[.12em] font-bold mb-2" style="color:rgba(255,255,255,0.25);">Low Stock</p>
+      <p class="text-[28px] font-black leading-none {% if inventory_summary.low_stock_count > 0 %}text-amber-400{% else %}text-white{% endif %}">{{ inventory_summary.low_stock_count }}</p>
+    </div>
+    <div class="card p-5">
+      <p class="text-[9px] uppercase tracking-[.12em] font-bold mb-2" style="color:rgba(255,255,255,0.25);">Out of Stock</p>
+      <p class="text-[28px] font-black leading-none {% if inventory_summary.out_of_stock_count > 0 %}text-red-400{% else %}text-white{% endif %}">{{ inventory_summary.out_of_stock_count }}</p>
+    </div>
+    <div class="card p-5">
+      <p class="text-[9px] uppercase tracking-[.12em] font-bold mb-2" style="color:rgba(255,255,255,0.25);">Inventory Value</p>
+      <p class="text-[20px] font-black text-brand-400 leading-none">₹{{ inventory_summary.total_inventory_value|floatformat:0 }}</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" id="filter-form" class="au3">
+    <div class="filter-bar flex flex-wrap items-center gap-3 p-4 rounded-2xl" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
+      <div class="flex items-center gap-2 flex-1 min-w-[180px]" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:0 12px;">
+        <span class="material-symbols-outlined text-white/30 text-[17px]">search</span>
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search name, SKU..." style="background:transparent!important;border:none!important;outline:none!important;color:#e8e9f5!important;font-size:13px;width:100%;padding:8px 0;"/>
+      </div>
+      <select name="category" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        {% for cat in categories %}<option value="{{ cat.name }}" {% if selected_category == cat.name %}selected{% endif %}>{{ cat.name }}</option>{% endfor %}
+      </select>
+      <select name="status" onchange="this.form.submit()">
+        <option value="">All Status</option>
+        <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+        <option value="low_stock" {% if selected_status == 'low_stock' %}selected{% endif %}>Low Stock</option>
+        <option value="out_of_stock" {% if selected_status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+      </select>
+      <button type="submit" class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-white" style="background:rgba(70,72,212,0.5);">
+        <span class="material-symbols-outlined text-[15px]">search</span>Search
+      </button>
+      <a href="{% url 'dashboard:inventory' %}" class="text-[12px] text-brand-400 font-semibold hover:underline">Reset</a>
+    </div>
+  </form>
+
+  <!-- Product Table -->
+  <div class="dark-table au4 overflow-hidden">
+    <div class="overflow-x-auto custom-scrollbar">
+      <table class="w-full">
+        <thead>
+          <tr>
+            <th class="pl-5 pr-2 w-8"><input type="checkbox" id="sel-all" class="rounded" style="accent-color:#4648d4;width:14px;height:14px;"/></th>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Category</th>
+            <th>Size</th>
+            <th>Unit</th>
+            <th class="text-right">Price</th>
+            <th class="text-center">Stock</th>
+            <th>Status</th>
+            <th class="w-10"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in products %}
+          <tr class="product-row">
+            <td class="pl-5 pr-2"><input type="checkbox" style="accent-color:#4648d4;width:14px;height:14px;"/></td>
+            <td>
+              <div class="flex items-center gap-3 py-1">
+                <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0 flex items-center justify-center" style="background:rgba(70,72,212,0.12);">
+                  {% if product.image %}<img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover"/>
+                  {% else %}<span class="material-symbols-outlined text-brand-400 text-[18px]">inventory_2</span>{% endif %}
+                </div>
+                <div>
+                  <p class="text-[13px] font-semibold text-white">{{ product.name }}</p>
+                  {% if product.variant %}<p class="text-[10px]" style="color:rgba(255,255,255,0.3);">{{ product.variant }}</p>{% endif %}
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-[11px]" style="color:rgba(255,255,255,0.35);">{{ product.sku }}</td>
+            <td>
+              {% if product.category %}
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold badge-primary">{{ product.category.name }}</span>
+              {% else %}<span style="color:rgba(255,255,255,0.2);">—</span>{% endif %}
+            </td>
+            <td class="text-[12px]" style="color:rgba(255,255,255,0.4);">{{ product.size|default:"—" }}</td>
+            <td class="text-[12px]" style="color:rgba(255,255,255,0.4);">{{ product.unit|default:"—" }}</td>
+            <td class="text-right text-[13px] font-bold text-white">₹{{ product.price }}</td>
+            <td>
+              <div class="flex flex-col items-center gap-1.5">
+                <span class="text-[13px] font-bold {% if product.stock == 0 %}text-red-400{% else %}text-white{% endif %}">{{ product.stock }}</span>
+                <div class="w-16 h-1.5 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.08);">
+                  <div class="h-full rounded-full {% if product.stock == 0 %}bg-red-500{% elif product.status == 'low_stock' %}bg-amber-400{% else %}bg-brand-400{% endif %}" style="width:{{ product.stock_percent }}%;"></div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full {% if product.status == 'active' %}bg-teal-400{% elif product.status == 'low_stock' %}bg-amber-400{% else %}bg-red-400{% endif %} {% if product.status == 'active' %}animate-pulse{% endif %}"></span>
+                <span class="text-[11px] font-semibold {% if product.status == 'active' %}text-teal-400{% elif product.status == 'low_stock' %}text-amber-400{% else %}text-red-400{% endif %}">{{ product.get_status_display }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="row-actions flex items-center gap-1 justify-end pr-2">
+                <a href="{% url 'dashboard:product_edit' product.pk %}" class="w-7 h-7 rounded-lg flex items-center justify-center text-brand-400 hover:bg-brand-500/20 transition-all" title="Edit">
+                  <span class="material-symbols-outlined text-[15px]">edit</span>
+                </a>
+                <form method="post" action="{% url 'dashboard:product_delete' product.pk %}" onsubmit="return confirm('Delete {{ product.name }}?')">
+                  {% csrf_token %}
+                  <button type="submit" class="w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-500/15 transition-all" title="Delete">
+                    <span class="material-symbols-outlined text-[15px]">delete</span>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="py-20 text-center">
+              <div class="flex flex-col items-center gap-3">
+                <span class="material-symbols-outlined text-[52px]" style="color:rgba(255,255,255,0.1);">inventory_2</span>
+                <p class="text-[14px] font-semibold text-white/40">No products found.</p>
+                <a href="{% url 'dashboard:product_add' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white mt-2" style="background:linear-gradient(135deg,#4648d4,#7c3aed);">
+                  <span class="material-symbols-outlined text-[16px]">add</span>Add your first product
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    <div class="px-5 py-3.5 flex items-center justify-between" style="border-top:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
+      <p class="text-[11px]" style="color:rgba(255,255,255,0.3);">Showing <strong class="text-white">{{ page_start }}–{{ page_end }}</strong> of <strong class="text-white">{{ total_products }}</strong></p>
+      <div class="flex items-center gap-1.5">
+        {% if has_previous %}<a href="?page={{ products.previous_page_number }}&category={{ selected_category }}&status={{ selected_status }}&q={{ search_query }}" class="pg-btn" style="border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);"><span class="material-symbols-outlined text-[16px]">chevron_left</span></a>{% else %}<span class="pg-btn disabled" style="border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,0.2);"><span class="material-symbols-outlined text-[16px]">chevron_left</span></span>{% endif %}
+        {% for p in page_range %}{% if p == current_page %}<span class="pg-btn active">{{ p }}</span>{% elif p == '…' %}<span class="px-1 text-white/20 text-[12px]">…</span>{% else %}<a href="?page={{ p }}&category={{ selected_category }}&status={{ selected_status }}&q={{ search_query }}" class="pg-btn" style="color:rgba(255,255,255,0.4);">{{ p }}</a>{% endif %}{% endfor %}
+        {% if has_next %}<a href="?page={{ products.next_page_number }}&category={{ selected_category }}&status={{ selected_status }}&q={{ search_query }}" class="pg-btn" style="border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);"><span class="material-symbols-outlined text-[16px]">chevron_right</span></a>{% else %}<span class="pg-btn disabled" style="border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,0.2);"><span class="material-symbols-outlined text-[16px]">chevron_right</span></span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Floating scan btn -->
+<div class="fixed bottom-7 right-7 z-50">
+  <button class="group flex items-center gap-2 text-white px-4 py-3 rounded-full font-semibold text-[13px] transition-all hover:opacity-90" style="background:linear-gradient(135deg,#6b38d4,#4648d4);box-shadow:0 8px 24px rgba(70,72,212,0.45);">
+    <span class="material-symbols-outlined text-[18px]">qr_code_scanner</span>
+    <span class="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-[80px] transition-all duration-300 text-[12px]">Scan SKU</span>
+  </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  const sa = document.getElementById('sel-all');
+  if(sa) sa.addEventListener('change',()=>{ document.querySelectorAll('tbody input[type=checkbox]').forEach(c=>c.checked=sa.checked); });
+</script>
+{% endblock %}

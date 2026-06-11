@@ -1,0 +1,123 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block search_placeholder %}Search customers...{% endblock %}
+
+{% block dashboard_content %}
+<main class="px-margin-desktop py-8">
+  <div class="max-w-container-max mx-auto space-y-stack-lg">
+
+    <div class="flex justify-between items-end">
+      <div>
+        <h2 class="font-headline-md text-headline-md text-on-surface mb-1">Customers</h2>
+        <p class="font-body-md text-on-surface-variant">{{ total_customers }} registered customers.</p>
+      </div>
+    </div>
+
+    {# Search #}
+    <form method="get">
+    <div class="bg-surface border border-outline-variant/30 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+      <div class="flex items-center gap-2 px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant/40 flex-1 max-w-sm">
+        <span class="material-symbols-outlined text-outline text-[20px]">search</span>
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search name or email..."
+               class="bg-transparent border-none focus:ring-0 text-body-sm font-medium w-full outline-none"/>
+      </div>
+      <button type="submit" class="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-body-sm font-semibold hover:opacity-90 transition-all">
+        <span class="material-symbols-outlined text-[18px]">search</span>Search
+      </button>
+      {% if search_query %}
+      <a href="{% url 'dashboard:customers' %}" class="text-body-sm text-primary font-semibold hover:underline">Clear</a>
+      {% endif %}
+    </div>
+    </form>
+
+    {# Customers Table #}
+    <div class="bg-surface rounded-3xl border border-outline-variant/50 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-surface-container-low/50">
+              <th class="px-8 py-4 font-label-md text-outline uppercase tracking-wider">Customer</th>
+              <th class="px-8 py-4 font-label-md text-outline uppercase tracking-wider">Email</th>
+              <th class="px-8 py-4 font-label-md text-outline uppercase tracking-wider">Phone</th>
+              <th class="px-8 py-4 font-label-md text-outline uppercase tracking-wider text-center">Orders</th>
+              <th class="px-8 py-4 font-label-md text-outline uppercase tracking-wider">Joined</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant/20">
+            {% for customer in customers %}
+            <tr class="hover:bg-surface-container-lowest transition-colors">
+              <td class="px-8 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[11px]">
+                    {{ customer.initials }}
+                  </div>
+                  <span class="font-body-sm font-semibold text-on-surface">{{ customer.name }}</span>
+                </div>
+              </td>
+              <td class="px-8 py-4 font-body-sm text-on-surface-variant">{{ customer.email }}</td>
+              <td class="px-8 py-4 font-body-sm text-on-surface-variant">{{ customer.phone|default:"—" }}</td>
+              <td class="px-8 py-4 text-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface-container font-body-sm font-bold text-on-surface">
+                  {{ customer.txn_count }}
+                </span>
+              </td>
+              <td class="px-8 py-4 font-body-sm text-on-surface-variant">{{ customer.created_at|date:"M d, Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="px-8 py-16 text-center">
+                <div class="flex flex-col items-center gap-3 text-on-surface-variant">
+                  <span class="material-symbols-outlined text-[48px] text-outline">group</span>
+                  <p class="font-body-md">No customers found.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {# Pagination #}
+      <div class="px-6 py-4 bg-surface-container-low flex items-center justify-between border-t border-outline-variant/20">
+        <p class="text-body-sm text-outline">
+          Showing <span class="font-semibold text-on-surface">{{ page_start }}-{{ page_end }}</span>
+          of <span class="font-semibold text-on-surface">{{ total_customers }}</span>
+        </p>
+        <div class="flex items-center gap-2">
+          {% if has_previous %}
+          <a href="?page={{ customers.previous_page_number }}&q={{ search_query }}"
+             class="p-2 border border-outline-variant/40 rounded-lg text-on-surface-variant hover:bg-surface-container transition-all">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+          </a>
+          {% else %}
+          <span class="p-2 border border-outline-variant/40 rounded-lg text-outline opacity-40"><span class="material-symbols-outlined text-[18px]">chevron_left</span></span>
+          {% endif %}
+
+          {% for p in page_range %}
+            {% if p == current_page %}
+            <span class="w-9 h-9 flex items-center justify-center bg-primary text-on-primary rounded-lg font-body-sm font-bold">{{ p }}</span>
+            {% elif p == '…' %}
+            <span class="px-1 text-outline">…</span>
+            {% else %}
+            <a href="?page={{ p }}&q={{ search_query }}"
+               class="w-9 h-9 flex items-center justify-center hover:bg-surface-container rounded-lg font-body-sm text-on-surface-variant transition-all">{{ p }}</a>
+            {% endif %}
+          {% endfor %}
+
+          {% if has_next %}
+          <a href="?page={{ customers.next_page_number }}&q={{ search_query }}"
+             class="p-2 border border-outline-variant/40 rounded-lg text-on-surface-variant hover:bg-surface-container transition-all">
+            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+          </a>
+          {% else %}
+          <span class="p-2 border border-outline-variant/40 rounded-lg text-outline opacity-40"><span class="material-symbols-outlined text-[18px]">chevron_right</span></span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+{% endblock %}

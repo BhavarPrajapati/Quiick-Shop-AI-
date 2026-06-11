@@ -1,0 +1,114 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block search_placeholder %}Search analytics...{% endblock %}
+
+{% block extra_css %}{{ block.super }}
+<style>
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes barGrow{from{width:0}to{width:var(--w)}}
+  .au1{animation:fadeUp .4s ease both;} .au2{animation:fadeUp .4s .06s ease both;} .au3{animation:fadeUp .4s .12s ease both;}
+  .bar-fill{animation:barGrow .8s cubic-bezier(.4,0,.2,1) both;}
+  .stat-card{background:#141526;border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:22px;position:relative;overflow:hidden;transition:transform .22s,box-shadow .22s,border-color .22s;}
+  .stat-card:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(70,72,212,0.18);border-color:rgba(70,72,212,0.25);}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:18px 18px 0 0;opacity:0;transition:opacity .22s;}
+  .stat-card:hover::before{opacity:1;}
+  .sc-green::before{background:linear-gradient(90deg,#14b8a6,#06b6d4);}
+  .sc-amber::before{background:linear-gradient(90deg,#f59e0b,#f97316);}
+  .sc-red::before{background:linear-gradient(90deg,#ef4444,#dc2626);}
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="px-7 py-6 max-w-[1240px] mx-auto space-y-6 relative z-10">
+
+  <!-- Header -->
+  <div class="au1">
+    <h1 class="text-[22px] font-black text-white tracking-tight">Analytics</h1>
+    <p class="text-[12px] mt-0.5" style="color:rgba(255,255,255,0.4);">Inventory health and stock insights for <span class="text-brand-400">{{ current_shop.name }}</span></p>
+  </div>
+
+  <!-- Status cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5 au2">
+
+    <div class="stat-card sc-green">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(20,184,166,0.15);"><span class="material-symbols-outlined text-teal-400 text-[20px]" style="font-variation-settings:'FILL' 1;">check_circle</span></div>
+        <p class="text-[11px] uppercase tracking-wider font-bold" style="color:rgba(255,255,255,0.3);">Active Products</p>
+      </div>
+      <p class="text-[36px] font-black text-white leading-none mb-4">{{ status_stats.active }}</p>
+      <div class="h-2 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.06);">
+        <div class="h-full rounded-full bg-teal-400 bar-fill" style="--w:{{ active_pct }}%;width:{{ active_pct }}%;"></div>
+      </div>
+      <p class="text-[11px] mt-2" style="color:rgba(255,255,255,0.3);">{{ active_pct }}% of catalog</p>
+    </div>
+
+    <div class="stat-card sc-amber">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(251,191,36,0.12);"><span class="material-symbols-outlined text-amber-400 text-[20px]" style="font-variation-settings:'FILL' 1;">warning</span></div>
+        <p class="text-[11px] uppercase tracking-wider font-bold" style="color:rgba(255,255,255,0.3);">Low Stock</p>
+      </div>
+      <p class="text-[36px] font-black leading-none mb-4 {% if status_stats.low_stock > 0 %}text-amber-400{% else %}text-white{% endif %}">{{ status_stats.low_stock }}</p>
+      <div class="h-2 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.06);">
+        <div class="h-full rounded-full bg-amber-400 bar-fill" style="--w:{{ low_pct }}%;width:{{ low_pct }}%;"></div>
+      </div>
+      <p class="text-[11px] mt-2" style="color:rgba(255,255,255,0.3);">{{ low_pct }}% of catalog</p>
+    </div>
+
+    <div class="stat-card sc-red">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(239,68,68,0.12);"><span class="material-symbols-outlined text-red-400 text-[20px]" style="font-variation-settings:'FILL' 1;">cancel</span></div>
+        <p class="text-[11px] uppercase tracking-wider font-bold" style="color:rgba(255,255,255,0.3);">Out of Stock</p>
+      </div>
+      <p class="text-[36px] font-black leading-none mb-4 {% if status_stats.out_of_stock > 0 %}text-red-400{% else %}text-white{% endif %}">{{ status_stats.out_of_stock }}</p>
+      <div class="h-2 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.06);">
+        <div class="h-full rounded-full bg-red-400 bar-fill" style="--w:{{ out_pct }}%;width:{{ out_pct }}%;"></div>
+      </div>
+      <p class="text-[11px] mt-2" style="color:rgba(255,255,255,0.3);">{{ out_pct }}% of catalog</p>
+    </div>
+
+  </div>
+
+  <!-- Category breakdown -->
+  <div class="card p-6 au3">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h3 class="font-bold text-white text-[15px] flex items-center gap-2">
+          <span class="material-symbols-outlined text-brand-400 text-[18px]">category</span>Products by Category
+        </h3>
+        <p class="text-[11px] mt-0.5" style="color:rgba(255,255,255,0.3);">{{ total_products }} total products</p>
+      </div>
+      <a href="{% url 'dashboard:inventory' %}" class="text-[12px] text-brand-400 font-semibold hover:underline">Manage Inventory</a>
+    </div>
+    <div class="space-y-4">
+      {% for cat in category_stats %}
+      <div class="flex items-center gap-4">
+        <div class="w-28 text-[12px] font-semibold text-white truncate shrink-0">{{ cat.name }}</div>
+        <div class="flex-1 h-2.5 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.06);">
+          <div class="h-full rounded-full bar-fill" style="background:linear-gradient(90deg,#4648d4,#7c3aed);--w:{% widthratio cat.product_count total_products 100 %}%;width:{% widthratio cat.product_count total_products 100 %}%;"></div>
+        </div>
+        <div class="w-10 text-right text-[13px] font-black text-white shrink-0">{{ cat.product_count }}</div>
+        <div class="w-10 text-right text-[10px] font-semibold shrink-0" style="color:rgba(255,255,255,0.3);">{% widthratio cat.product_count total_products 100 %}%</div>
+      </div>
+      {% empty %}
+      <div class="py-10 text-center">
+        <span class="material-symbols-outlined text-[40px]" style="color:rgba(255,255,255,0.1);">category</span>
+        <p class="text-[13px] mt-2" style="color:rgba(255,255,255,0.3);">No categories found.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="rounded-2xl p-5 flex items-center justify-between flex-wrap gap-4" style="background:rgba(70,72,212,0.1);border:1px solid rgba(70,72,212,0.2);">
+    <div>
+      <p class="font-bold text-white text-[14px]">Manage your catalog</p>
+      <p class="text-[12px] mt-1" style="color:rgba(255,255,255,0.4);">Add, edit, or delete products from the Inventory page.</p>
+    </div>
+    <a href="{% url 'dashboard:inventory' %}" class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:opacity-90" style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 4px 16px rgba(70,72,212,0.35);">
+      <span class="material-symbols-outlined text-[17px]">inventory_2</span>Go to Inventory
+    </a>
+  </div>
+
+</div>
+{% endblock %}

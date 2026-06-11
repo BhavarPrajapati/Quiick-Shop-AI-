@@ -1,0 +1,70 @@
+# ─────────────────────────────────────────────
+#  Quiick AI — .gitignore
+# ─────────────────────────────────────────────
+
+# ── Environment & Secrets ──────────────────
+.env
+.env.local
+.env.production
+*.env
+
+# ── Python ─────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual Environments ───────────────────
+venv/
+env/
+ENV/
+.venv/
+backend/venv/
+
+# ── Django ─────────────────────────────────
+*.sqlite3
+db.sqlite3
+backend/db.sqlite3
+staticfiles/
+backend/staticfiles/
+*.log
+
+# ── Media uploads (user files) ─────────────
+backend/media/
+media/
+
+# ── IDE & OS ───────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Jupyter Notebooks output ───────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── Node (frontend) ────────────────────────
+frontend/node_modules/
+frontend/.next/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+
+# ── Build artifacts ────────────────────────
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Testing ────────────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/

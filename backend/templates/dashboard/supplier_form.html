@@ -1,0 +1,182 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block search_placeholder %}Search suppliers...{% endblock %}
+
+{% block extra_css %}{{ block.super }}
+<style>
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .au1 { animation: fadeUp .4s ease both; }
+  .au2 { animation: fadeUp .4s .08s ease both; }
+  .au3 { animation: fadeUp .4s .16s ease both; }
+
+  .sup-label {
+    display: block;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 7px;
+  }
+  .sup-input {
+    width: 100%;
+    padding: 11px 14px;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.09) !important;
+    border-radius: 12px !important;
+    color: #e8e9f5 !important;
+    font-size: 13.5px;
+    transition: border-color .18s, box-shadow .18s, background .18s;
+    outline: none;
+  }
+  .sup-input:focus {
+    border-color: rgba(70,72,212,0.55) !important;
+    box-shadow: 0 0 0 3px rgba(70,72,212,0.12) !important;
+    background: rgba(255,255,255,0.07) !important;
+  }
+  .sup-input::placeholder { color: rgba(255,255,255,0.2) !important; }
+
+  .sec-divider {
+    font-size: 9px; font-weight: 800;
+    letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 18px;
+  }
+  .sec-divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .field-err { font-size: 11px; color: #f87171; margin-top: 5px; }
+
+  /* override django widget styles */
+  #id_name, #id_contact_person, #id_phone,
+  #id_email, #id_gst_number, #id_address, #id_notes {
+    width: 100%;
+    padding: 11px 14px !important;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.09) !important;
+    border-radius: 12px !important;
+    color: #e8e9f5 !important;
+    font-size: 13.5px !important;
+    transition: border-color .18s, box-shadow .18s !important;
+  }
+  #id_address, #id_notes { min-height: 90px; resize: vertical; }
+  #id_name:focus, #id_contact_person:focus, #id_phone:focus,
+  #id_email:focus, #id_gst_number:focus, #id_address:focus, #id_notes:focus {
+    border-color: rgba(70,72,212,0.55) !important;
+    box-shadow: 0 0 0 3px rgba(70,72,212,0.12) !important;
+    background: rgba(255,255,255,0.07) !important;
+    outline: none !important;
+  }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="px-7 py-6 max-w-2xl mx-auto relative z-10">
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-[12px] mb-6 au1" style="color:rgba(255,255,255,0.3);">
+    <a href="{% url 'dashboard:suppliers' %}" class="hover:text-brand-400 transition-colors">Suppliers</a>
+    <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+    <span class="text-white font-medium">{{ form_title }}</span>
+  </div>
+
+  <!-- Card -->
+  <div class="card overflow-hidden au2">
+
+    <!-- Header -->
+    <div class="px-6 py-5 flex items-center gap-4" style="border-bottom:1px solid rgba(255,255,255,0.06);">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(70,72,212,0.15);border:1px solid rgba(70,72,212,0.2);">
+        <span class="material-symbols-outlined text-brand-400 text-[22px]" style="font-variation-settings:'FILL' 1;">storefront</span>
+      </div>
+      <div>
+        <p class="font-black text-white text-[15px] leading-tight">{{ form_title }}</p>
+        <p class="text-[11px] mt-0.5" style="color:rgba(255,255,255,0.32);">Add company or agency details to manage supply chain</p>
+      </div>
+    </div>
+
+    <!-- Form body -->
+    <form method="post" novalidate class="px-6 py-6 space-y-6">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="px-4 py-3 rounded-xl text-[12px] badge-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <!-- Company info -->
+      <div>
+        <p class="sec-divider">Company Info</p>
+        <div>
+          <label class="sup-label">Company / Agency Name <span class="text-red-400">*</span></label>
+          {{ form.name }}
+          {% if form.name.errors %}<p class="field-err">{{ form.name.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <!-- Contact details -->
+      <div>
+        <p class="sec-divider">Contact Details</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="sup-label">Contact Person</label>
+            {{ form.contact_person }}
+          </div>
+          <div>
+            <label class="sup-label">Phone</label>
+            {{ form.phone }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Business details -->
+      <div>
+        <p class="sec-divider">Business Details</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="sup-label">Email</label>
+            {{ form.email }}
+          </div>
+          <div>
+            <label class="sup-label">GST Number <span style="color:rgba(255,255,255,0.2);font-size:9px;">(optional)</span></label>
+            {{ form.gst_number }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Address & Notes -->
+      <div>
+        <p class="sec-divider">Address & Notes</p>
+        <div class="space-y-5">
+          <div>
+            <label class="sup-label">Address</label>
+            {{ form.address }}
+          </div>
+          <div>
+            <label class="sup-label">Notes <span style="color:rgba(255,255,255,0.2);font-size:9px;">(optional)</span></label>
+            {{ form.notes }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-4 pt-5" style="border-top:1px solid rgba(255,255,255,0.06);">
+        <button type="submit"
+                class="flex items-center justify-center gap-2 flex-1 py-3 rounded-xl text-[13.5px] font-bold text-white transition-all hover:opacity-90 active:scale-95"
+                style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 4px 20px rgba(70,72,212,0.4);">
+          <span class="material-symbols-outlined text-[17px]">save</span>
+          Save Supplier
+        </button>
+        <a href="{% url 'dashboard:suppliers' %}"
+           class="flex items-center justify-center gap-2 flex-1 py-3 rounded-xl text-[13.5px] font-semibold text-white/50 text-center transition-all hover:text-white/80"
+           style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);">
+          <span class="material-symbols-outlined text-[17px]">arrow_back</span>
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,854 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Quiick AI — AI-Powered Store Management{% endblock %}
+
+{% block head_cdn %}
+{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block tailwind_config %}
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: { 50:'#eef0ff',100:'#dde2ff',200:'#c3c8ff',300:'#9ea5ff',400:'#7878ff',500:'#4648d4',600:'#3a3cb8',700:'#2f3096',800:'#252778',900:'#1a1b5c' },
+          accent: { 400:'#a78bfa',500:'#8b5cf6',600:'#7c3aed' },
+          teal:   { 400:'#2dd4bf',500:'#14b8a6',600:'#0d9488' },
+          dark:   { 900:'#0a0b1a',800:'#0f1024',700:'#141528',600:'#1a1b30',500:'#1e2038',400:'#252644',300:'#2e3050' },
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand: #4648d4;
+    --brand-light: #6366f1;
+    --accent: #8b5cf6;
+    --teal: #14b8a6;
+    --bg: #09091a;
+  }
+
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: #e8e9f5; overflow-x: hidden; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0f1024; }
+  ::-webkit-scrollbar-thumb { background: #2e3050; border-radius: 99px; }
+
+  /* ── Canvas bg ── */
+  #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  /* ── Glass ── */
+  .glass {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .glass-strong {
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(32px);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  /* ── Gradient text ── */
+  .grad-text {
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 40%, #38bdf8 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .grad-text-warm {
+    background: linear-gradient(135deg, #f472b6 0%, #818cf8 50%, #38bdf8 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Glow ── */
+  .glow-brand { box-shadow: 0 0 40px rgba(70,72,212,0.4), 0 0 80px rgba(70,72,212,0.15); }
+  .glow-accent { box-shadow: 0 0 30px rgba(139,92,246,0.35); }
+  .text-glow { text-shadow: 0 0 40px rgba(99,102,241,0.5); }
+
+  /* ── Animations ── */
+  @keyframes fadeUp   { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+  @keyframes slideRight { from{opacity:0;transform:translateX(-30px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes slideLeft  { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes scaleIn  { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:scale(1)} }
+  @keyframes float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  @keyframes spin-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  @keyframes spin-rev  { from{transform:rotate(360deg)} to{transform:rotate(0deg)} }
+  @keyframes pulse-ring { 0%{transform:scale(1);opacity:.8} 100%{transform:scale(1.5);opacity:0} }
+  @keyframes gradient-shift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  @keyframes count-up { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .animate-float    { animation: float 4s ease-in-out infinite; }
+  .animate-spin-slow{ animation: spin-slow 20s linear infinite; }
+  .animate-spin-rev { animation: spin-rev 15s linear infinite; }
+
+  /* ── Reveal on scroll ── */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.from-left  { transform: translateX(-28px); }
+  .reveal.from-right { transform: translateX(28px); }
+  .reveal.scale { transform: scale(0.92); }
+  .reveal.visible { opacity: 1 !important; transform: none !important; }
+
+  /* ── Nav ── */
+  .nav-pill { transition: all .2s ease; }
+  .nav-pill:hover { color: #818cf8; background: rgba(129,140,248,0.08); }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    background: linear-gradient(135deg, #4648d4, #7c3aed);
+    color: #fff; font-weight: 700; padding: 14px 32px;
+    border-radius: 99px; display: inline-flex; align-items: center; gap: 8px;
+    font-size: 15px; cursor: pointer; border: none;
+    transition: all .22s ease; position: relative; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(70,72,212,0.35);
+  }
+  .btn-primary::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+    opacity: 0; transition: opacity .2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(70,72,212,0.5); }
+  .btn-primary:hover::before { opacity: 1; }
+  .btn-primary:active { transform: scale(0.97); }
+
+  .btn-ghost {
+    background: rgba(255,255,255,0.06); color: #c7c8e8; font-weight: 600;
+    padding: 14px 28px; border-radius: 99px; display: inline-flex; align-items: center; gap: 8px;
+    font-size: 15px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+    transition: all .2s ease;
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+
+  /* ── Metric card ── */
+  .metric-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px; padding: 22px 20px;
+    transition: all .25s ease; cursor: default;
+    position: relative; overflow: hidden;
+  }
+  .metric-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+  }
+  .metric-card:hover { transform: translateY(-4px); border-color: rgba(129,140,248,0.3); background: rgba(255,255,255,0.06); }
+
+  /* ── Feature card ── */
+  .feat-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 24px; padding: 32px;
+    transition: all .3s ease; position: relative; overflow: hidden;
+  }
+  .feat-card::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(70,72,212,0.06) 0%, transparent 60%);
+    opacity: 0; transition: opacity .3s;
+  }
+  .feat-card:hover { transform: translateY(-5px); border-color: rgba(129,140,248,0.25); background: rgba(255,255,255,0.05); }
+  .feat-card:hover::after { opacity: 1; }
+
+  /* ── Floating badge ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(70,72,212,0.15); border: 1px solid rgba(70,72,212,0.3);
+    color: #818cf8; padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600;
+  }
+
+  /* ── Dashboard mockup ── */
+  .mockup-card {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px; padding: 18px;
+    animation: fadeUp .8s .3s ease both;
+  }
+  .mockup-inner { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 14px; }
+  .mockup-stat { font-size: 22px; font-weight: 800; color: #fff; line-height: 1; }
+  .mockup-label { font-size: 11px; color: rgba(255,255,255,0.45); margin-bottom: 6px; }
+  .mockup-badge-green { background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .mockup-badge-red   { background: rgba(248,113,113,0.15); color: #f87171; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+
+  /* ── Gradient border on focus ── */
+  .gradient-border { background: linear-gradient(var(--bg), var(--bg)) padding-box, linear-gradient(135deg, #4648d4, #8b5cf6) border-box; border: 1px solid transparent; }
+
+  /* ── Stat numbers ── */
+  .stat-num { font-size: clamp(40px, 5vw, 64px); font-weight: 900; line-height: 1; }
+
+  /* ── Section divider ── */
+  .section-divider { width: 60px; height: 3px; background: linear-gradient(90deg, #4648d4, #8b5cf6); border-radius: 99px; }
+
+  /* ── Orbit rings ── */
+  .orbit-1 { position:absolute;inset:-40px;border:1px solid rgba(70,72,212,0.12);border-radius:50%; animation:spin-slow 20s linear infinite; }
+  .orbit-2 { position:absolute;inset:-80px;border:1px dashed rgba(139,92,246,0.08);border-radius:50%; animation:spin-rev 28s linear infinite; }
+  .orbit-3 { position:absolute;inset:-120px;border:1px solid rgba(20,184,166,0.06);border-radius:50%; animation:spin-slow 35s linear infinite; }
+
+  /* ── Noise texture overlay ── */
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+    opacity: 0.35;
+  }
+
+  /* ── Typing cursor ── */
+  .cursor { display:inline-block; width:3px; height:1em; background:#818cf8; margin-left:2px; border-radius:2px; animation:blink 1s step-end infinite; vertical-align:text-bottom; }
+
+  /* Counter anim */
+  .count-anim { animation: count-up .6s ease both; }
+
+  /* Gradient animated bg for CTA */
+  .cta-bg {
+    background: linear-gradient(-45deg, #1a1b5c, #2e1065, #0c4a6e, #1a1b5c);
+    background-size: 400% 400%;
+    animation: gradient-shift 8s ease infinite;
+  }
+</style>
+{% endblock %}
+
+{% block body_class %}{% endblock %}
+
+{% block body %}
+
+<!-- Animated canvas background -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- ══════════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════════ -->
+<nav id="navbar" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-32px)] max-w-6xl glass rounded-2xl px-6 py-3.5 flex items-center justify-between transition-all duration-300" style="animation:fadeIn .6s ease both;">
+  <div class="flex items-center gap-2.5">
+    <div class="w-9 h-9 rounded-xl overflow-hidden shrink-0" style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 4px 14px rgba(70,72,212,0.4);">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6" y="10" width="24" height="18" rx="6" fill="white" fill-opacity="0.95"/>
+        <circle cx="13" cy="18" r="3" fill="#4648d4"/>
+        <circle cx="23" cy="18" r="3" fill="#4648d4"/>
+        <circle cx="14.2" cy="16.8" r="1" fill="white"/>
+        <circle cx="24.2" cy="16.8" r="1" fill="white"/>
+        <line x1="18" y1="10" x2="18" y2="5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="18" cy="4" r="2" fill="#a78bfa"/>
+        <path d="M13 23 Q18 27 23 23" stroke="#4648d4" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+        <rect x="2" y="15" width="4" height="6" rx="2" fill="white" fill-opacity="0.8"/>
+        <rect x="30" y="15" width="4" height="6" rx="2" fill="white" fill-opacity="0.8"/>
+        <path d="M20 11.5 L17.5 15 L19.5 15 L17 19 L20.5 14.5 L18.5 14.5Z" fill="#fbbf24" opacity="0.9"/>
+      </svg>
+    </div>
+    <span class="font-black text-white text-[16px] tracking-tight">Quiick AI</span>
+  </div>
+
+  <div class="hidden md:flex items-center gap-1">
+    <a href="#features" class="nav-pill px-4 py-2 rounded-xl text-[13px] font-medium text-white/60">Platform</a>
+    <a href="#ai-section" class="nav-pill px-4 py-2 rounded-xl text-[13px] font-medium text-white/60">Vision</a>
+    <a href="#stats" class="nav-pill px-4 py-2 rounded-xl text-[13px] font-medium text-white/60">Results</a>
+    <a href="#cta" class="nav-pill px-4 py-2 rounded-xl text-[13px] font-medium text-white/60">Showcase</a>
+  </div>
+
+  <a href="{% url 'core:onboarding_start' %}"
+     class="btn-primary text-sm py-2.5 px-5">
+    Get Started
+    <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+  </a>
+</nav>
+
+<!-- ══════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════ -->
+<section class="relative min-h-screen flex items-center justify-center px-6 pt-28 pb-16 z-10">
+
+  <!-- Radial glow -->
+  <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style="background:radial-gradient(circle, rgba(70,72,212,0.2) 0%, transparent 70%); filter:blur(40px);"></div>
+  <div class="absolute top-1/3 left-1/3 w-[400px] h-[400px] rounded-full pointer-events-none" style="background:radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%); filter:blur(60px);"></div>
+  <div class="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] rounded-full pointer-events-none" style="background:radial-gradient(circle, rgba(20,184,166,0.1) 0%, transparent 70%); filter:blur(50px);"></div>
+
+  <div class="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+    <!-- Left: Copy -->
+    <div style="animation:fadeUp .8s ease both;">
+      <div class="badge mb-6">
+        <span class="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse"></span>
+        AI-Powered Store Management
+      </div>
+
+      <h1 class="text-[clamp(38px,5vw,68px)] font-black leading-[1.08] tracking-[-0.03em] text-white mb-6">
+        The Future of<br>
+        Commerce,<br>
+        Orchestrated by <span class="grad-text text-glow">AI.</span>
+      </h1>
+
+      <p class="text-[17px] text-white/55 leading-[1.7] mb-8 max-w-[480px]">
+        Quiick AI transforms complex retail operations into a fluid, automated system. Sell, restock, and manage your entire store with natural language commands.
+      </p>
+
+      <div class="flex flex-wrap gap-4 mb-10">
+        <a href="{% url 'core:onboarding_start' %}" class="btn-primary text-[15px]">
+          Start Free Today
+          <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+        </a>
+        <a href="#features" class="btn-ghost text-[15px]">
+          <span class="material-symbols-outlined text-[18px]">play_circle</span>
+          See How It Works
+        </a>
+      </div>
+
+      <!-- Trust badges -->
+      <div class="flex items-center gap-6 flex-wrap">
+        <div class="flex items-center gap-2">
+          <div class="flex -space-x-2">
+            {% for c in "ABC" %}
+            <div class="w-7 h-7 rounded-full border-2 border-dark-900 flex items-center justify-center text-[10px] font-bold text-white" style="background:linear-gradient(135deg,#4648d4,#8b5cf6)">{{ c }}</div>
+            {% endfor %}
+          </div>
+          <span class="text-xs text-white/40 font-medium">500+ shops using it</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          {% for i in "12345" %}<span class="material-symbols-outlined text-amber-400 text-[14px]" style="font-variation-settings:'FILL' 1;">star</span>{% endfor %}
+          <span class="text-xs text-white/40 font-medium">4.9/5 rating</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Dashboard mockup -->
+    <div class="relative" style="animation:slideLeft .9s .2s ease both;padding:24px;">
+      <div class="relative">
+        <!-- Glow behind card -->
+        <div class="absolute inset-[-20px] rounded-3xl pointer-events-none" style="background:radial-gradient(ellipse at center, rgba(70,72,212,0.25) 0%, transparent 70%);"></div>
+
+        <div class="mockup-card relative z-10 rounded-3xl" style="background:rgba(15,16,36,0.9);border:1px solid rgba(255,255,255,0.1);padding:24px;box-shadow:0 32px 80px rgba(0,0,0,0.5);">
+          <!-- Header -->
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-8 h-8 rounded-xl overflow-hidden shrink-0" style="background:linear-gradient(135deg,#4648d4,#7c3aed);">
+              <svg width="32" height="32" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="6" y="10" width="24" height="18" rx="6" fill="white" fill-opacity="0.95"/>
+                <circle cx="13" cy="18" r="3" fill="#4648d4"/>
+                <circle cx="23" cy="18" r="3" fill="#4648d4"/>
+                <circle cx="14.2" cy="16.8" r="1" fill="white"/>
+                <circle cx="24.2" cy="16.8" r="1" fill="white"/>
+                <line x1="18" y1="10" x2="18" y2="5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="18" cy="4" r="2" fill="#a78bfa"/>
+                <path d="M13 23 Q18 27 23 23" stroke="#4648d4" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+                <path d="M20 11.5 L17.5 15 L19.5 15 L17 19 L20.5 14.5 L18.5 14.5Z" fill="#fbbf24" opacity="0.9"/>
+              </svg>
+            </div>
+            <div>
+              <p class="text-white font-bold text-[13px] leading-none">Quiick AI</p>
+              <p class="text-white/40 text-[10px] mt-0.5">RK Fashion Store</p>
+            </div>
+            <div class="ml-auto flex items-center gap-1.5">
+              <span class="w-2 h-2 bg-teal-400 rounded-full animate-pulse"></span>
+              <span class="text-[10px] text-teal-400 font-semibold">Live</span>
+            </div>
+          </div>
+
+          <!-- Stats row -->
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="mockup-inner">
+              <p class="mockup-label">Total Revenue</p>
+              <p class="mockup-stat">₹4.8L</p>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="mockup-badge-green">↑ 12.5%</span>
+              </div>
+            </div>
+            <div class="mockup-inner">
+              <p class="mockup-label">Today's Sales</p>
+              <p class="mockup-stat">1,284</p>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="mockup-badge-red">↓ 2.4%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI command -->
+          <div class="mockup-inner mb-4" style="background:rgba(70,72,212,0.08);border-color:rgba(70,72,212,0.2);">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="material-symbols-outlined text-brand-400 text-[15px]" style="font-variation-settings:'FILL' 1;">psychology</span>
+              <p class="text-[11px] font-bold text-white/80">AI Assistant</p>
+            </div>
+            <p class="text-[11px] text-white/45 leading-relaxed">
+              <span id="typewriter-text"></span><span class="cursor"></span>
+            </p>
+          </div>
+
+          <!-- Mini metrics -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="text-center py-2.5 rounded-xl" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+              <p class="text-white font-bold text-[15px]">42</p>
+              <p class="text-white/35 text-[9px] mt-0.5">Products</p>
+            </div>
+            <div class="text-center py-2.5 rounded-xl" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+              <p class="text-amber-400 font-bold text-[15px]">3</p>
+              <p class="text-white/35 text-[9px] mt-0.5">Low Stock</p>
+            </div>
+            <div class="text-center py-2.5 rounded-xl" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+              <p class="text-teal-400 font-bold text-[15px]">₹9K</p>
+              <p class="text-white/35 text-[9px] mt-0.5">Value</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating badges -->
+        <div class="absolute -top-6 -right-6 rounded-2xl px-4 py-3 flex items-center gap-3 animate-float z-20"
+             style="animation-delay:.5s;
+                    background:rgba(15,16,36,0.92);
+                    border:1px solid rgba(45,212,191,0.45);
+                    box-shadow:0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(45,212,191,0.1), inset 0 1px 0 rgba(255,255,255,0.08);
+                    backdrop-filter:blur(20px);
+                    min-width:160px;">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(20,184,166,0.2);border:1px solid rgba(20,184,166,0.3);">
+            <span class="material-symbols-outlined text-teal-400 text-[18px]" style="font-variation-settings:'FILL' 1;">trending_up</span>
+          </div>
+          <div>
+            <p class="text-white font-bold text-[13px] leading-tight">Revenue Up</p>
+            <p class="text-teal-400 text-[11px] font-semibold mt-0.5">+12.5% this week</p>
+          </div>
+        </div>
+
+        <div class="absolute -bottom-6 -left-6 rounded-2xl px-4 py-3 flex items-center gap-3 animate-float z-20"
+             style="animation-delay:1.2s;
+                    background:rgba(15,16,36,0.92);
+                    border:1px solid rgba(99,102,241,0.45);
+                    box-shadow:0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(70,72,212,0.1), inset 0 1px 0 rgba(255,255,255,0.08);
+                    backdrop-filter:blur(20px);
+                    min-width:165px;">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(70,72,212,0.25);border:1px solid rgba(99,102,241,0.35);">
+            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;color:#818cf8;">psychology</span>
+          </div>
+          <div>
+            <p class="text-white font-bold text-[13px] leading-tight">AI Restocked</p>
+            <p class="text-[11px] font-semibold mt-0.5" style="color:#818cf8;">50 shirts added</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40" style="animation:fadeIn 1s 1.5s ease both;">
+    <span class="text-[10px] text-white/50 tracking-widest uppercase font-semibold">Scroll</span>
+    <div class="w-5 h-8 rounded-full border border-white/20 flex items-start justify-center p-1.5">
+      <div class="w-1 h-2 bg-white/60 rounded-full" style="animation:float 1.5s ease-in-out infinite;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     LOGOS / SOCIAL PROOF
+══════════════════════════════════════════════ -->
+<section class="relative z-10 py-12 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="glass rounded-2xl py-6 px-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
+      <p class="text-white/25 text-xs font-semibold uppercase tracking-widest w-full text-center mb-1">Trusted by store owners across India</p>
+      {% for label in "Grocery · Fashion · Electronics · Pharma · Hardware" %}{% endfor %}
+      <span class="text-white/30 text-sm font-semibold">🛒 Grocery Stores</span>
+      <span class="text-white/20 text-sm">|</span>
+      <span class="text-white/30 text-sm font-semibold">👗 Fashion Boutiques</span>
+      <span class="text-white/20 text-sm">|</span>
+      <span class="text-white/30 text-sm font-semibold">📱 Electronics Shops</span>
+      <span class="text-white/20 text-sm">|</span>
+      <span class="text-white/30 text-sm font-semibold">💊 Pharmacies</span>
+      <span class="text-white/20 text-sm">|</span>
+      <span class="text-white/30 text-sm font-semibold">🔧 Hardware Stores</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     STATS
+══════════════════════════════════════════════ -->
+<section id="stats" class="relative z-10 py-20 px-6">
+  <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+    {% for stat in stats %}
+    <div class="reveal text-center">
+      <p class="stat-num grad-text mb-2">{{ stat.value }}</p>
+      <p class="text-white/40 text-sm font-medium">{{ stat.label }}</p>
+    </div>
+    {% empty %}
+    <div class="reveal text-center">
+      <p class="stat-num grad-text mb-2">500+</p>
+      <p class="text-white/40 text-sm font-medium">Active Stores</p>
+    </div>
+    <div class="reveal text-center" style="animation-delay:.1s;">
+      <p class="stat-num grad-text mb-2">₹2Cr+</p>
+      <p class="text-white/40 text-sm font-medium">Revenue Tracked</p>
+    </div>
+    <div class="reveal text-center" style="animation-delay:.2s;">
+      <p class="stat-num grad-text mb-2">10K+</p>
+      <p class="text-white/40 text-sm font-medium">AI Commands/Day</p>
+    </div>
+    <div class="reveal text-center" style="animation-delay:.3s;">
+      <p class="stat-num grad-text mb-2">99.9%</p>
+      <p class="text-white/40 text-sm font-medium">Uptime</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     FEATURES BENTO
+══════════════════════════════════════════════ -->
+<section id="features" class="relative z-10 py-20 px-6">
+  <div class="max-w-6xl mx-auto">
+
+    <div class="text-center mb-16 reveal">
+      <div class="section-divider mx-auto mb-6"></div>
+      <h2 class="text-[clamp(28px,4vw,48px)] font-black text-white leading-tight tracking-tight mb-4">
+        Everything you need to<br><span class="grad-text">run your store smarter</span>
+      </h2>
+      <p class="text-white/45 text-[16px] max-w-xl mx-auto leading-relaxed">
+        From AI-powered stock management to supplier tracking — one platform handles it all.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+      <!-- Big card: AI Assistant -->
+      <div class="md:col-span-2 feat-card reveal">
+        <div class="w-12 h-12 rounded-2xl bg-brand-500/20 flex items-center justify-center mb-6">
+          <span class="material-symbols-outlined text-brand-400 text-[26px]" style="font-variation-settings:'FILL' 1;">psychology</span>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-3">AI Stock Assistant</h3>
+        <p class="text-white/45 text-sm leading-relaxed mb-6">
+          Talk to your inventory. Say "sell 10 shirts", "restock 50 jeans", or "check low stock" — and it happens instantly. No forms, no clicks.
+        </p>
+        <!-- Mini chat preview -->
+        <div class="rounded-xl p-4 space-y-3" style="background:rgba(70,72,212,0.08);border:1px solid rgba(70,72,212,0.15);">
+          <div class="flex items-start gap-3">
+            <div class="w-6 h-6 rounded-full bg-brand-500/30 flex items-center justify-center shrink-0 mt-0.5">
+              <span class="material-symbols-outlined text-brand-400 text-[12px]">person</span>
+            </div>
+            <div class="bg-brand-500/20 text-white text-xs px-3 py-2 rounded-xl rounded-tl-sm">sell 20 jeans</div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="w-6 h-6 rounded-full bg-teal-500/20 flex items-center justify-center shrink-0 mt-0.5">
+              <span class="material-symbols-outlined text-teal-400 text-[12px]" style="font-variation-settings:'FILL' 1;">psychology</span>
+            </div>
+            <div class="text-white/60 text-xs px-3 py-2 rounded-xl rounded-tl-sm" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+              ✅ Sold 20 units from Jeans. New stock: 30. Applied in RK Fashion Store.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Smart Inventory -->
+      <div class="feat-card reveal from-right flex flex-col">
+        <div class="w-12 h-12 rounded-2xl bg-teal-500/15 flex items-center justify-center mb-6">
+          <span class="material-symbols-outlined text-teal-400 text-[26px]" style="font-variation-settings:'FILL' 1;">inventory_2</span>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-3">Smart Inventory</h3>
+        <p class="text-white/45 text-sm leading-relaxed mb-6 flex-1">Auto-tracks stock levels, sends alerts for low stock, and shows your full product catalog in real time.</p>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between px-3 py-2 rounded-lg" style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.1);">
+            <span class="text-xs text-white/50">Blue Jeans (M)</span>
+            <span class="text-teal-400 text-xs font-bold">50 units</span>
+          </div>
+          <div class="flex items-center justify-between px-3 py-2 rounded-lg" style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.1);">
+            <span class="text-xs text-white/50">Red T-Shirt</span>
+            <span class="text-amber-400 text-xs font-bold">⚠ 5 left</span>
+          </div>
+          <div class="flex items-center justify-between px-3 py-2 rounded-lg" style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.1);">
+            <span class="text-xs text-white/50">Cargo Pants</span>
+            <span class="text-red-400 text-xs font-bold">Out of stock</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supplier Management -->
+      <div class="feat-card reveal from-left">
+        <div class="w-12 h-12 rounded-2xl bg-accent-500/15 flex items-center justify-center mb-6">
+          <span class="material-symbols-outlined text-accent-400 text-[26px]" style="font-variation-settings:'FILL' 1;">storefront</span>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-3">Supplier Tracking</h3>
+        <p class="text-white/45 text-sm leading-relaxed">Manage all the companies and agencies you buy from. Create purchase orders, track deliveries, and view full history.</p>
+      </div>
+
+      <!-- Sales Analytics -->
+      <div class="feat-card reveal">
+        <div class="w-12 h-12 rounded-2xl bg-teal-500/15 flex items-center justify-center mb-6">
+          <span class="material-symbols-outlined text-teal-400 text-[26px]" style="font-variation-settings:'FILL' 1;">leaderboard</span>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-3">Sales Analytics</h3>
+        <p class="text-white/45 text-sm leading-relaxed">Every AI sell/add action is logged. View your complete stock movement history with filters, search, and summaries.</p>
+      </div>
+
+      <!-- Multi Shop -->
+      <div class="feat-card reveal from-right">
+        <div class="w-12 h-12 rounded-2xl bg-brand-500/15 flex items-center justify-center mb-6">
+          <span class="material-symbols-outlined text-brand-400 text-[26px]" style="font-variation-settings:'FILL' 1;">store</span>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-3">Multi-Shop Ready</h3>
+        <p class="text-white/45 text-sm leading-relaxed">Grocery, Fashion, or Electronics — Quiick AI adapts to your store type with the right fields, units, and categories.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     AI SECTION
+══════════════════════════════════════════════ -->
+<section id="ai-section" class="relative z-10 py-24 px-6">
+  <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+    <!-- Orbit graphic -->
+    <div class="relative flex items-center justify-center reveal from-left" style="min-height:360px;">
+      <div class="orbit-1"></div>
+      <div class="orbit-2"></div>
+      <div class="orbit-3"></div>
+
+      <!-- Dots on orbit -->
+      <div class="absolute w-3 h-3 bg-brand-500 rounded-full shadow-lg" style="top:50%;left:0;transform:translate(-50%,-50%);box-shadow:0 0 12px rgba(70,72,212,0.8);"></div>
+      <div class="absolute w-2 h-2 bg-teal-400 rounded-full" style="top:0;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(20,184,166,0.8);"></div>
+      <div class="absolute w-2 h-2 bg-accent-400 rounded-full" style="bottom:0;right:15%;box-shadow:0 0 10px rgba(167,139,250,0.8);"></div>
+
+      <!-- Center icon -->
+      <div class="relative z-10 w-24 h-24 rounded-3xl flex items-center justify-center glow-brand animate-float" style="background:linear-gradient(135deg,#4648d4,#7c3aed);">
+        <span class="material-symbols-outlined text-white text-[44px]" style="font-variation-settings:'FILL' 1;">psychology</span>
+      </div>
+    </div>
+
+    <!-- Copy -->
+    <div class="reveal from-right">
+      <div class="section-divider mb-6"></div>
+      <h2 class="text-[clamp(26px,3.5vw,42px)] font-black text-white leading-tight tracking-tight mb-6">
+        Powered by<br><span class="grad-text-warm">Conversational AI</span>
+      </h2>
+      <p class="text-white/45 text-[15px] leading-[1.8] mb-8">
+        No more complicated dashboards. Just talk to your store. Quiick AI's AI understands English and Hinglish commands — sell, restock, check — applied in real time.
+      </p>
+      <div class="space-y-5">
+        <div class="flex gap-4 items-start">
+          <div class="w-10 h-10 rounded-xl glass flex items-center justify-center text-brand-400 shrink-0">
+            <span class="material-symbols-outlined text-[18px]">bolt</span>
+          </div>
+          <div>
+            <p class="text-white font-semibold text-sm mb-1">Real-time Stock Updates</p>
+            <p class="text-white/40 text-sm">Every AI command instantly updates your inventory database with full audit trail.</p>
+          </div>
+        </div>
+        <div class="flex gap-4 items-start">
+          <div class="w-10 h-10 rounded-xl glass flex items-center justify-center text-teal-400 shrink-0">
+            <span class="material-symbols-outlined text-[18px]">translate</span>
+          </div>
+          <div>
+            <p class="text-white font-semibold text-sm mb-1">Hindi + English Support</p>
+            <p class="text-white/40 text-sm">Type "sell 10 shirts" or "10 shirt becho" — both work perfectly.</p>
+          </div>
+        </div>
+        <div class="flex gap-4 items-start">
+          <div class="w-10 h-10 rounded-xl glass flex items-center justify-center text-accent-400 shrink-0">
+            <span class="material-symbols-outlined text-[18px]">history</span>
+          </div>
+          <div>
+            <p class="text-white font-semibold text-sm mb-1">Full Chat History</p>
+            <p class="text-white/40 text-sm">Every conversation saved per shop. Switch sessions, start new chats, delete old ones.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     CTA
+══════════════════════════════════════════════ -->
+<section id="cta" class="relative z-10 py-20 px-6">
+  <div class="max-w-4xl mx-auto">
+    <div class="cta-bg rounded-3xl p-1 shadow-2xl reveal scale">
+      <div class="rounded-[22px] p-12 text-center relative overflow-hidden" style="background:rgba(10,11,26,0.7);">
+        <!-- Glow blobs -->
+        <div class="absolute top-0 right-0 w-80 h-80 rounded-full pointer-events-none" style="background:radial-gradient(circle,rgba(70,72,212,0.15),transparent 70%);"></div>
+        <div class="absolute bottom-0 left-0 w-64 h-64 rounded-full pointer-events-none" style="background:radial-gradient(circle,rgba(139,92,246,0.12),transparent 70%);"></div>
+
+        <div class="relative">
+          <span class="badge mb-6 mx-auto">
+            <span class="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse"></span>
+            Free to get started
+          </span>
+          <h2 class="text-[clamp(28px,4vw,52px)] font-black text-white leading-tight tracking-tight mb-5">
+            Ready to transform<br>your store?
+          </h2>
+          <p class="text-white/45 text-[16px] mb-10 max-w-xl mx-auto leading-relaxed">
+            Set up your shop in 2 minutes. No credit card. No technical knowledge needed. Start managing smarter today.
+          </p>
+          <div class="flex flex-wrap gap-4 justify-center">
+            <a href="{% url 'core:onboarding_start' %}" class="btn-primary text-[15px] py-4 px-8">
+              Create Your Shop — Free
+              <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+            </a>
+          </div>
+          <p class="text-white/20 text-xs mt-6">Takes less than 2 minutes · No technical setup required</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════ -->
+<footer class="relative z-10 border-t py-14 px-6" style="border-color:rgba(255,255,255,0.06);">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row justify-between gap-10 mb-10">
+      <div class="max-w-xs">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-9 h-9 rounded-xl overflow-hidden shrink-0" style="background:linear-gradient(135deg,#4648d4,#7c3aed);">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="10" width="24" height="18" rx="6" fill="white" fill-opacity="0.95"/>
+              <circle cx="13" cy="18" r="3" fill="#4648d4"/>
+              <circle cx="23" cy="18" r="3" fill="#4648d4"/>
+              <circle cx="14.2" cy="16.8" r="1" fill="white"/>
+              <circle cx="24.2" cy="16.8" r="1" fill="white"/>
+              <line x1="18" y1="10" x2="18" y2="5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="18" cy="4" r="2" fill="#a78bfa"/>
+              <path d="M13 23 Q18 27 23 23" stroke="#4648d4" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+              <rect x="2" y="15" width="4" height="6" rx="2" fill="white" fill-opacity="0.8"/>
+              <rect x="30" y="15" width="4" height="6" rx="2" fill="white" fill-opacity="0.8"/>
+              <path d="M20 11.5 L17.5 15 L19.5 15 L17 19 L20.5 14.5 L18.5 14.5Z" fill="#fbbf24" opacity="0.9"/>
+            </svg>
+          </div>
+          <span class="font-black text-white text-[15px] tracking-tight">Quiick AI</span>
+        </div>
+        <p class="text-white/30 text-sm leading-relaxed">AI-powered store management for modern Indian retail businesses.</p>
+      </div>
+      <div class="flex gap-16 flex-wrap">
+        <div>
+          <p class="text-white/60 text-xs font-bold uppercase tracking-wider mb-4">Product</p>
+          <div class="space-y-2.5">
+            <a href="#features" class="block text-white/35 text-sm hover:text-white/70 transition-colors">Features</a>
+            <a href="#ai-section" class="block text-white/35 text-sm hover:text-white/70 transition-colors">AI Assistant</a>
+            <a href="{% url 'core:onboarding_start' %}" class="block text-white/35 text-sm hover:text-white/70 transition-colors">Get Started</a>
+          </div>
+        </div>
+        <div>
+          <p class="text-white/60 text-xs font-bold uppercase tracking-wider mb-4">Legal</p>
+          <div class="space-y-2.5">
+            <a href="#" class="block text-white/35 text-sm hover:text-white/70 transition-colors">Privacy Policy</a>
+            <a href="#" class="block text-white/35 text-sm hover:text-white/70 transition-colors">Terms of Service</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="border-t pt-6 flex flex-col md:flex-row items-center justify-between gap-3" style="border-color:rgba(255,255,255,0.06);">
+      <p class="text-white/20 text-xs">© 2025 Quiick AI. All rights reserved.</p>
+      <p class="text-white/20 text-xs">Built with ❤️ for Indian store owners</p>
+    </div>
+  </div>
+</footer>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ── Animated canvas background ── */
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const COLORS = ['rgba(70,72,212,', 'rgba(139,92,246,', 'rgba(20,184,166,', 'rgba(129,140,248,'];
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * 1920, y: Math.random() * 1080,
+      r: Math.random() * 1.8 + 0.3,
+      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+      alpha: Math.random() * 0.5 + 0.1,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)]
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + p.alpha + ')';
+      ctx.fill();
+    });
+    // Draw connecting lines
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = 'rgba(70,72,212,' + (0.06 * (1 - dist/120)) + ')';
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ── Scroll reveal ── */
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); ro.unobserve(e.target); } });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
+
+/* ── Typewriter ── */
+(function() {
+  const lines = [
+    'Sold 20 jeans. New stock: 30.',
+    'Low stock alert: Red T-Shirt (5 left).',
+    'Restocked 50 shirts from Sharma Textiles.',
+    'Today\'s revenue: ₹12,400 (+8.2%).',
+  ];
+  let li = 0, ci = 0, deleting = false;
+  const el = document.getElementById('typewriter-text');
+  if (!el) return;
+  function type() {
+    const line = lines[li];
+    if (!deleting) {
+      el.textContent = line.slice(0, ci++);
+      if (ci > line.length) { deleting = true; setTimeout(type, 2200); return; }
+    } else {
+      el.textContent = line.slice(0, ci--);
+      if (ci < 0) { deleting = false; li = (li + 1) % lines.length; ci = 0; setTimeout(type, 400); return; }
+    }
+    setTimeout(type, deleting ? 28 : 55);
+  }
+  type();
+})();
+
+/* ── Navbar scroll effect ── */
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('navbar');
+  if (window.scrollY > 60) {
+    nav.style.background = 'rgba(10,11,26,0.92)';
+    nav.style.borderColor = 'rgba(255,255,255,0.1)';
+  } else {
+    nav.style.background = '';
+    nav.style.borderColor = '';
+  }
+});
+</script>
+{% endblock %}

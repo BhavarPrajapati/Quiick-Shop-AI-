@@ -1,0 +1,107 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block search_placeholder %}Search suppliers...{% endblock %}
+
+{% block extra_css %}{{ block.super }}
+<style>
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .au1{animation:fadeUp .4s ease both;} .au2{animation:fadeUp .4s .07s ease both;} .au3{animation:fadeUp .4s .14s ease both;}
+  .sup-card{background:#141526;border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:22px;transition:transform .22s,box-shadow .22s,border-color .2s;position:relative;overflow:hidden;display:block;text-decoration:none;}
+  .sup-card:hover{transform:translateY(-4px);box-shadow:0 14px 40px rgba(70,72,212,0.18);border-color:rgba(70,72,212,0.25);}
+  .sup-card .glow{position:absolute;width:120px;height:120px;border-radius:50%;filter:blur(50px);top:-30px;right:-30px;background:rgba(70,72,212,0.25);opacity:0;transition:opacity .3s;}
+  .sup-card:hover .glow{opacity:1;}
+  .pg-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:12px;font-weight:700;transition:all .15s;color:rgba(255,255,255,0.4);}
+  .pg-btn:hover{background:rgba(70,72,212,0.2);color:#a5b4fc;}
+  .pg-btn.active{background:#4648d4;color:#fff;}
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="px-7 py-6 max-w-[1240px] mx-auto space-y-6 relative z-10">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-4 au1">
+    <div>
+      <h1 class="text-[22px] font-black text-white tracking-tight">Suppliers</h1>
+      <p class="text-[12px] mt-0.5" style="color:rgba(255,255,255,0.4);">Companies &amp; agencies you purchase from — <span class="text-white font-semibold">{{ total_suppliers }}</span> registered</p>
+    </div>
+    <a href="{% url 'dashboard:supplier_add' %}" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:opacity-90 active:scale-95" style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 4px 16px rgba(70,72,212,0.4);">
+      <span class="material-symbols-outlined text-[17px]">add</span>Add Supplier
+    </a>
+  </div>
+
+  <!-- Search -->
+  <form method="get" class="au2">
+    <div class="flex flex-wrap gap-3 p-4 rounded-2xl" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
+      <div class="flex items-center gap-2 flex-1 min-w-[200px] px-3 rounded-xl" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);">
+        <span class="material-symbols-outlined text-white/25 text-[16px]">search</span>
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search name, contact, phone..." style="background:transparent!important;border:none!important;outline:none!important;color:#e8e9f5!important;font-size:13px;padding:9px 0;width:100%;"/>
+      </div>
+      <button type="submit" class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-white" style="background:rgba(70,72,212,0.5);">
+        <span class="material-symbols-outlined text-[15px]">search</span>Search
+      </button>
+      {% if search_query %}<a href="{% url 'dashboard:suppliers' %}" class="text-[12px] text-brand-400 font-semibold hover:underline self-center">Clear</a>{% endif %}
+    </div>
+  </form>
+
+  <!-- Cards or empty state -->
+  {% if suppliers %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 au3">
+    {% for supplier in suppliers %}
+    <a href="{% url 'dashboard:supplier_detail' supplier.pk %}" class="sup-card">
+      <div class="glow"></div>
+      <div class="relative">
+        <div class="flex items-start gap-4 mb-5">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center font-black text-[15px] shrink-0 transition-all" style="background:rgba(70,72,212,0.18);color:#818cf8;">{{ supplier.initials }}</div>
+          <div class="min-w-0">
+            <p class="font-bold text-white truncate text-[14px]">{{ supplier.name }}</p>
+            {% if supplier.contact_person %}<p class="text-[11px] mt-0.5" style="color:rgba(255,255,255,0.4);">{{ supplier.contact_person }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="space-y-2 mb-5">
+          {% if supplier.phone %}<div class="flex items-center gap-2 text-[11px]" style="color:rgba(255,255,255,0.4);"><span class="material-symbols-outlined text-[13px]" style="color:rgba(255,255,255,0.2);">call</span>{{ supplier.phone }}</div>{% endif %}
+          {% if supplier.email %}<div class="flex items-center gap-2 text-[11px] truncate" style="color:rgba(255,255,255,0.4);"><span class="material-symbols-outlined text-[13px]" style="color:rgba(255,255,255,0.2);">mail</span>{{ supplier.email }}</div>{% endif %}
+          {% if supplier.gst_number %}<div class="flex items-center gap-2 text-[11px]" style="color:rgba(255,255,255,0.4);"><span class="material-symbols-outlined text-[13px]" style="color:rgba(255,255,255,0.2);">receipt</span>GST: {{ supplier.gst_number }}</div>{% endif %}
+        </div>
+        <div class="flex items-center justify-between pt-4" style="border-top:1px solid rgba(255,255,255,0.06);">
+          <div class="text-center">
+            <p class="text-[17px] font-black text-white leading-none">{{ supplier.total_orders }}</p>
+            <p class="text-[10px] mt-1" style="color:rgba(255,255,255,0.3);">Orders</p>
+          </div>
+          <div class="text-center">
+            <p class="text-[17px] font-black text-white leading-none">₹{{ supplier.total_spent|floatformat:0 }}</p>
+            <p class="text-[10px] mt-1" style="color:rgba(255,255,255,0.3);">Total Spent</p>
+          </div>
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center transition-all" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.3);">
+            <span class="material-symbols-outlined text-[17px]">chevron_right</span>
+          </div>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  <div class="flex items-center justify-between px-5 py-3.5 rounded-2xl" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
+    <p class="text-[11px]" style="color:rgba(255,255,255,0.3);">Showing <strong class="text-white">{{ page_start }}–{{ page_end }}</strong> of <strong class="text-white">{{ total_suppliers }}</strong></p>
+    <div class="flex items-center gap-1.5">
+      {% if has_previous %}<a href="?page={{ suppliers.previous_page_number }}&q={{ search_query }}" class="pg-btn" style="border:1px solid rgba(255,255,255,0.1);"><span class="material-symbols-outlined text-[16px]">chevron_left</span></a>{% else %}<span class="pg-btn" style="opacity:.3;"><span class="material-symbols-outlined text-[16px]">chevron_left</span></span>{% endif %}
+      {% for p in page_range %}{% if p == current_page %}<span class="pg-btn active">{{ p }}</span>{% elif p == '…' %}<span class="px-1 text-white/20 text-[11px]">…</span>{% else %}<a href="?page={{ p }}&q={{ search_query }}" class="pg-btn">{{ p }}</a>{% endif %}{% endfor %}
+      {% if has_next %}<a href="?page={{ suppliers.next_page_number }}&q={{ search_query }}" class="pg-btn" style="border:1px solid rgba(255,255,255,0.1);"><span class="material-symbols-outlined text-[16px]">chevron_right</span></a>{% else %}<span class="pg-btn" style="opacity:.3;"><span class="material-symbols-outlined text-[16px]">chevron_right</span></span>{% endif %}
+    </div>
+  </div>
+
+  {% else %}
+  <div class="text-center py-20 rounded-3xl au3" style="background:rgba(255,255,255,0.02);border:2px dashed rgba(70,72,212,0.15);">
+    <span class="material-symbols-outlined text-[56px]" style="color:rgba(255,255,255,0.08);">storefront</span>
+    <p class="font-bold text-white text-[16px] mt-4 mb-2">No suppliers yet</p>
+    <p class="text-[13px] mb-7" style="color:rgba(255,255,255,0.35);">Add companies or agencies you buy inventory from.</p>
+    <a href="{% url 'dashboard:supplier_add' %}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-[13px] font-bold text-white" style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 4px 16px rgba(70,72,212,0.4);">
+      <span class="material-symbols-outlined text-[17px]">add</span>Add First Supplier
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

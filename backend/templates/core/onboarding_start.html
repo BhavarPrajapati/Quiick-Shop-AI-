@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  :root{--brand:#4648d4;--accent:#7c3aed;--teal:#14b8a6;--bg:#09091a;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:#e8e9f5;min-height:100vh;overflow-x:hidden;}
+
+  /* bg gradient */
+  body::before{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 70% 50% at 20% 10%, rgba(70,72,212,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 90%, rgba(124,58,237,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 70% 30%, rgba(20,184,166,0.07) 0%, transparent 60%);
+  }  /* glass */
+  .glass{
+    background:rgba(255,255,255,0.04);
+    backdrop-filter:blur(24px) saturate(140%);
+    -webkit-backdrop-filter:blur(24px) saturate(140%);
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .glass-strong{
+    background:rgba(255,255,255,0.06);
+    backdrop-filter:blur(32px);
+    border:1px solid rgba(255,255,255,0.1);
+  }
+
+  /* animations */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes glow-pulse{0%,100%{box-shadow:0 0 0 0 rgba(70,72,212,0.4)}50%{box-shadow:0 0 0 10px rgba(70,72,212,0)}}
+
+  .anim-1{animation:fadeUp .5s ease both;}
+  .anim-2{animation:fadeUp .5s .1s ease both;}
+  .anim-3{animation:fadeUp .5s .2s ease both;}
+
+  /* shop type card */
+  .shop-card{
+    background:rgba(255,255,255,0.03);
+    border:2px solid rgba(255,255,255,0.07);
+    border-radius:20px;padding:24px 20px;
+    cursor:pointer;
+    transition:all .25s ease;
+    position:relative;overflow:hidden;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .shop-card::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,rgba(70,72,212,0.08) 0%,transparent 60%);
+    opacity:0;transition:opacity .25s;
+  }
+  .shop-card:hover{
+    border-color:rgba(70,72,212,0.4);
+    background:rgba(70,72,212,0.06);
+    transform:translateY(-3px);
+    box-shadow:0 16px 40px rgba(70,72,212,0.15);
+  }
+  .shop-card:hover::before{opacity:1;}
+
+  /* SELECTED STATE */
+  .shop-card.selected{
+    border-color:#4648d4 !important;
+    background:rgba(70,72,212,0.12) !important;
+    transform:translateY(-3px);
+    box-shadow:0 0 0 1px rgba(70,72,212,0.5), 0 16px 40px rgba(70,72,212,0.2);
+  }
+  .shop-card.selected::before{opacity:1 !important;}
+  .shop-card.selected .check-ring{
+    background:rgba(70,72,212,0.3);border-color:rgba(70,72,212,0.8);
+  }
+  .shop-card.selected .check-dot{opacity:1;transform:scale(1);}
+  .shop-card.selected .card-icon-box{background:rgba(70,72,212,0.25);color:#818cf8;}
+  .shop-card.selected .card-title{color:#c7c8ff;}
+  .shop-card.selected .selected-badge{opacity:1;}
+
+  /* check ring */
+  .check-ring{
+    width:20px;height:20px;border-radius:50%;
+    border:2px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.04);
+    display:flex;align-items:center;justify-content:center;
+    transition:all .2s ease;flex-shrink:0;
+  }
+  .check-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:#818cf8;
+    opacity:0;transform:scale(0);
+    transition:all .2s ease;
+  }
+  .selected-badge{
+    position:absolute;top:12px;right:12px;
+    background:rgba(70,72,212,0.8);
+    border:1px solid rgba(129,140,248,0.4);
+    color:#c7c8ff;
+    font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    padding:3px 8px;border-radius:99px;
+    opacity:0;transition:opacity .2s ease;
+  }
+
+  .card-icon-box{
+    width:44px;height:44px;border-radius:14px;
+    background:rgba(255,255,255,0.06);
+    display:flex;align-items:center;justify-content:center;
+    color:rgba(255,255,255,0.5);
+    transition:all .2s ease;flex-shrink:0;
+  }
+  .card-title{font-size:17px;font-weight:700;color:#e8e9f5;transition:color .2s;}
+  .card-desc{font-size:12px;color:rgba(255,255,255,0.35);line-height:1.6;}
+
+  /* btn */
+  .btn-primary{
+    background:linear-gradient(135deg,#4648d4,#7c3aed);
+    color:#fff;font-weight:700;padding:14px 32px;
+    border-radius:14px;display:inline-flex;align-items:center;gap:8px;
+    font-size:15px;cursor:pointer;border:none;
+    transition:all .2s ease;
+    box-shadow:0 8px 32px rgba(70,72,212,0.4);
+    animation:glow-pulse 3s ease-in-out infinite;
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(70,72,212,0.55);}
+  .btn-primary:active{transform:scale(0.97);}
+
+  /* info cards */
+  .info-card{
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:18px;padding:20px;
+  }
+  .info-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;}
+  .info-row + .info-row{border-top:1px solid rgba(255,255,255,0.05);}
+
+  /* step badge */
+  .step-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(70,72,212,0.15);border:1px solid rgba(70,72,212,0.3);
+    color:#818cf8;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;
+  }
+
+  /* progress bar */
+  .progress-bar{height:3px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,#4648d4,#7c3aed);border-radius:99px;width:50%;}
+</style>
+{% endblock %}
+
+{% block body_class %}{% endblock %}
+
+{% block body %}
+<div class="relative min-h-screen flex z-10">
+
+  <!-- ══════════════════════════════════
+       LEFT PANEL — Premium real image
+  ══════════════════════════════════ -->
+  <div class="hidden lg:flex lg:w-[42%] xl:w-[45%] relative overflow-hidden shrink-0" style="min-height:100vh;">
+    <!-- Real world image - modern Indian retail store -->
+    <img
+      src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=900&q=80&fit=crop&crop=center"
+      alt="Premium retail store"
+      class="absolute inset-0 w-full h-full object-cover"
+      style="filter:brightness(0.32) saturate(0.9);"
+    />
+
+    <!-- Heavy dark overlay so text pops clearly -->
+    <div class="absolute inset-0" style="background:rgba(9,9,26,0.55);"></div>
+    <!-- Right edge fade into dark bg -->
+    <div class="absolute inset-0" style="background:linear-gradient(to right, transparent 60%, rgba(9,9,26,0.9) 100%);"></div>
+    <!-- Bottom fade -->
+    <div class="absolute inset-0" style="background:linear-gradient(to bottom, rgba(9,9,26,0.3) 0%, transparent 15%, transparent 80%, rgba(9,9,26,0.5) 100%);"></div>
+    <!-- Subtle brand color tint -->
+    <div class="absolute inset-0" style="background:linear-gradient(135deg, rgba(70,72,212,0.12) 0%, rgba(139,92,246,0.07) 50%, transparent 80%);"></div>
+
+    <!-- Floating content over image -->
+    <div class="relative z-10 flex flex-col justify-between p-10 w-full">
+
+      <!-- Top: Logo -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl overflow-hidden shrink-0" style="background:linear-gradient(135deg,#4648d4,#7c3aed);box-shadow:0 4px 16px rgba(70,72,212,0.5);">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="10" width="24" height="18" rx="6" fill="white" fill-opacity="0.95"/>
+            <circle cx="13" cy="18" r="3" fill="#4648d4"/>
+            <circle cx="23" cy="18" r="3" fill="#4648d4"/>
+            <circle cx="14.2" cy="16.8" r="1" fill="white"/>
+            <circle cx="24.2" cy="16.8" r="1" fill="white"/>
+            <line x1="18" y1="10" x2="18" y2="5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="18" cy="4" r="2" fill="#a78bfa"/>
+            <path d="M13 23 Q18 27 23 23" stroke="#4648d4" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+            <rect x="2" y="15" width="4" height="6" rx="2" fill="white" fill-opacity="0.8"/>
+            <rect x="30" y="15" width="4" height="6" rx="2" fill="white" fill-opacity="0.8"/>
+            <path d="M20 11.5 L17.5 15 L19.5 15 L17 19 L20.5 14.5 L18.5 14.5Z" fill="#fbbf24" opacity="0.9"/>
+          </svg>
+        </div>
+        <span class="font-black text-white text-[16px] tracking-tight drop-shadow-lg">Quiick AI</span>
+      </div>
+
+      <!-- Middle: Hero quote -->
+      <div class="space-y-5">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-teal-300" style="background:rgba(20,184,166,0.15);border:1px solid rgba(20,184,166,0.3);">
+          <span class="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse"></span>
+          AI-Powered Store Management
+        </div>
+        <h2 class="text-[clamp(26px,3vw,38px)] font-black text-white leading-tight tracking-tight drop-shadow-xl">
+          Your store,<br>
+          <span style="background:linear-gradient(135deg,#818cf8,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">supercharged by AI</span>
+        </h2>
+        <p class="text-white/60 text-[14px] leading-relaxed max-w-xs drop-shadow">
+          Set up your shop in minutes and manage everything with simple voice-like commands in English or Hinglish.
+        </p>
+
+        <!-- Stats chips -->
+        <div class="flex flex-wrap gap-3 pt-2">
+          <div class="flex items-center gap-2 px-3 py-2 rounded-xl" style="background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.12);">
+            <span class="material-symbols-outlined text-teal-400 text-[15px]" style="font-variation-settings:'FILL' 1;">store</span>
+            <span class="text-white text-[12px] font-semibold">500+ Shops</span>
+          </div>
+          <div class="flex items-center gap-2 px-3 py-2 rounded-xl" style="background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.12);">
+            <span class="material-symbols-outlined text-amber-400 text-[15px]" style="font-variation-settings:'FILL' 1;">star</span>
+            <span class="text-white text-[12px] font-semibold">4.9 Rating</span>
+          </div>
+          <div class="flex items-center gap-2 px-3 py-2 rounded-xl" style="background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.12);">
+            <span class="material-symbols-outlined text-brand-400 text-[15px]" style="font-variation-settings:'FILL' 1;">bolt</span>
+            <span class="text-white text-[12px] font-semibold">2 min Setup</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom: Testimonial -->
+      <div class="rounded-2xl p-4" style="background:rgba(255,255,255,0.08);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.12);">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-full shrink-0 flex items-center justify-center font-bold text-white text-sm" style="background:linear-gradient(135deg,#4648d4,#7c3aed);">R</div>
+          <div>
+            <p class="text-white/80 text-[12px] leading-relaxed italic">"Quiick AI ne mera poora inventory management badal diya. Ab sirf ek line bolne se sab ho jaata hai."</p>
+            <p class="text-white/40 text-[10px] mt-1.5 font-semibold">— Rahul Sharma, RK Fashion Store, Delhi</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       RIGHT PANEL — Form
+  ══════════════════════════════════ -->
+  <div class="flex-1 flex flex-col min-h-screen px-6 py-8 md:px-10 md:py-12 overflow-y-auto">
+
+    <!-- Top bar -->
+    <div class="flex items-center justify-between mb-10 anim-1">
+      <a href="{% url 'core:landing' %}"
+         class="inline-flex items-center gap-2 text-white/50 hover:text-white text-sm font-medium transition-colors">
+        <span class="material-symbols-outlined text-[17px]">arrow_back</span>
+        Back to home
+      </a>
+      <!-- Mobile logo only -->
+      <div class="flex lg:hidden items-center gap-2">
+        <div class="w-7 h-7 rounded-lg overflow-hidden shrink-0" style="background:linear-gradient(135deg,#4648d4,#7c3aed);">
+          <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="10" width="24" height="18" rx="6" fill="white" fill-opacity="0.95"/>
+            <circle cx="13" cy="18" r="3" fill="#4648d4"/><circle cx="23" cy="18" r="3" fill="#4648d4"/>
+            <path d="M20 11.5 L17.5 15 L19.5 15 L17 19 L20.5 14.5 L18.5 14.5Z" fill="#fbbf24" opacity="0.9"/>
+          </svg>
+        </div>
+        <span class="font-black text-white text-[14px]">Quiick AI</span>
+      </div>
+      <div class="hidden lg:block text-right">
+        <p class="text-[10px] uppercase tracking-[.15em] text-white/30 font-semibold">Setup Wizard</p>
+      </div>
+    </div>
+
+    <div class="flex-1 flex flex-col justify-center max-w-xl mx-auto w-full">
+
+      <!-- Progress -->
+      <div class="flex items-center gap-4 mb-8 anim-1">
+        <div class="step-badge">
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+          Step 1 of 2
+        </div>
+        <div class="flex-1 progress-bar max-w-[120px]"><div class="progress-fill" style="width:50%;"></div></div>
+      </div>
+
+      <!-- Heading -->
+      <div class="anim-2">
+        <h1 class="text-[clamp(30px,4vw,48px)] font-black text-white leading-tight tracking-tight mb-3">
+          Select your<br>
+          <span style="background:linear-gradient(135deg,#818cf8,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">shop type</span>
+        </h1>
+        <p class="text-white/45 text-[15px] leading-relaxed mb-8 max-w-lg">
+          Choose the business you run and we'll tailor your dashboard, product fields, and AI commands for it.
+        </p>
+
+        <form method="post" id="shop-form">
+          {% csrf_token %}
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8" id="shop-cards">
+            {% for shop_type in shop_types %}
+            <div class="shop-card {% if forloop.first %}selected{% endif %}"
+                 data-value="{{ shop_type.value }}"
+                 onclick="selectShop('{{ shop_type.value }}', this)">
+              <div class="flex items-center justify-between">
+                <div class="card-icon-box">
+                  {% if shop_type.value == 'grocery' %}
+                    <span class="material-symbols-outlined text-[22px]" style="font-variation-settings:'FILL' 1;">local_grocery_store</span>
+                  {% elif shop_type.value == 'cloths' %}
+                    <span class="material-symbols-outlined text-[22px]" style="font-variation-settings:'FILL' 1;">checkroom</span>
+                  {% else %}
+                    <span class="material-symbols-outlined text-[22px]" style="font-variation-settings:'FILL' 1;">devices</span>
+                  {% endif %}
+                </div>
+                <div class="check-ring"><div class="check-dot"></div></div>
+              </div>
+              <div>
+                <p class="card-title">{{ shop_type.title }}</p>
+                <p class="card-desc mt-1">{{ shop_type.description }}</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Hidden input -->
+          <input type="hidden" name="shop_type" id="selected-type" value="{{ shop_types.0.value }}"/>
+
+          <div class="flex flex-wrap items-center gap-5">
+            <button type="submit" class="btn-primary">
+              Continue
+              <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+            </button>
+            <p class="text-white/30 text-sm">You can change everything later.</p>
+          </div>
+        </form>
+      </div>
+
+      <!-- Info card below form -->
+      <div class="mt-8 anim-3">
+        <div class="info-card">
+          <p class="text-[9px] uppercase tracking-[.14em] text-white/30 font-bold mb-3">What changes by type</p>
+          <div class="info-row">
+            <span class="material-symbols-outlined text-blue-400 text-[18px] mt-0.5 shrink-0">tune</span>
+            <p class="text-white/45 text-xs leading-relaxed">Product fields change automatically — units, sizes, variants.</p>
+          </div>
+          <div class="info-row">
+            <span class="material-symbols-outlined text-blue-400 text-[18px] mt-0.5 shrink-0">psychology</span>
+            <p class="text-white/45 text-xs leading-relaxed">AI commands adapt to your store (sell shirts, restock rice, etc.).</p>
+          </div>
+          <div class="info-row">
+            <span class="material-symbols-outlined text-blue-400 text-[18px] mt-0.5 shrink-0">inventory_2</span>
+            <p class="text-white/45 text-xs leading-relaxed">All inventory, analytics, and chat stay scoped to this shop.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const icons = { grocery:'local_grocery_store', cloths:'checkroom', electronics:'devices' };
+
+  function selectShop(value, el) {
+    // deselect all
+    document.querySelectorAll('.shop-card').forEach(c => c.classList.remove('selected'));
+    // select clicked
+    el.classList.add('selected');
+    // update hidden input
+    document.getElementById('selected-type').value = value;
+  }
+
+  // Initialise first card as selected on load
+  const firstCard = document.querySelector('.shop-card');
+  if (firstCard) {
+    const val = firstCard.dataset.value;
+    document.getElementById('selected-type').value = val;
+  }
+</script>
+{% endblock %}

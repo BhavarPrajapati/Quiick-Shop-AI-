@@ -1,0 +1,135 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block search_placeholder %}Search...{% endblock %}
+
+{% block dashboard_content %}
+<main class="px-margin-desktop py-8">
+  <div class="max-w-2xl mx-auto space-y-6">
+
+    {# Breadcrumb #}
+    <div class="flex items-center gap-2 text-sm text-on-surface-variant">
+      <a href="{% url 'dashboard:suppliers' %}" class="hover:text-primary transition-colors">Suppliers</a>
+      <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+      <a href="{% url 'dashboard:supplier_detail' supplier.pk %}" class="hover:text-primary transition-colors">{{ supplier.name }}</a>
+      <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+      <span class="text-on-surface font-medium">New Order</span>
+    </div>
+
+    <div class="bg-surface border border-outline-variant/30 rounded-3xl p-8 shadow-sm">
+
+      {# Supplier info mini card #}
+      <div class="flex items-center gap-4 mb-8 p-4 bg-primary/5 border border-primary/10 rounded-2xl">
+        <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-bold shrink-0">
+          {{ supplier.initials }}
+        </div>
+        <div>
+          <p class="font-semibold text-on-surface text-sm">{{ supplier.name }}</p>
+          {% if supplier.contact_person %}<p class="text-xs text-on-surface-variant">{{ supplier.contact_person }}</p>{% endif %}
+        </div>
+        <div class="ml-auto text-right">
+          <p class="text-xs text-outline">Past Orders</p>
+          <p class="font-bold text-on-surface">{{ supplier.total_orders }}</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4 mb-8">
+        <div class="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary">
+          <span class="material-symbols-outlined text-[24px]">add_shopping_cart</span>
+        </div>
+        <div>
+          <h2 class="font-headline-sm text-on-surface font-semibold">Create Purchase Order</h2>
+          <p class="text-sm text-on-surface-variant">Record a new order from this supplier.</p>
+        </div>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="space-y-5">
+
+          <div>
+            <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Select Product (from inventory)</label>
+            {{ form.product }}
+            <p class="text-xs text-outline mt-1">Or leave blank and type the product name below.</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Product Name (manual)</label>
+            {{ form.product_name }}
+            {% if form.product_name.errors %}<p class="text-xs text-error mt-1">{{ form.product_name.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Quantity *</label>
+              {{ form.quantity }}
+              {% if form.quantity.errors %}<p class="text-xs text-error mt-1">{{ form.quantity.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Unit Price (₹) *</label>
+              {{ form.unit_price }}
+              {% if form.unit_price.errors %}<p class="text-xs text-error mt-1">{{ form.unit_price.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          {# Live total preview #}
+          <div class="p-4 bg-surface-container rounded-xl flex items-center justify-between">
+            <p class="text-sm text-on-surface-variant">Estimated Total</p>
+            <p class="text-lg font-bold text-primary" id="total-preview">₹0.00</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Status</label>
+              {{ form.status }}
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Expected Delivery Date</label>
+              {{ form.expected_date }}
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Notes</label>
+            {{ form.notes }}
+          </div>
+
+        </div>
+
+        <div class="flex items-center gap-4 mt-8 pt-6 border-t border-outline-variant/20">
+          <button type="submit"
+                  class="flex-1 py-3 bg-primary text-on-primary rounded-xl text-sm font-semibold hover:opacity-90 active:scale-95 transition-all shadow-md">
+            <span class="flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+              Create Order
+            </span>
+          </button>
+          <a href="{% url 'dashboard:supplier_detail' supplier.pk %}"
+             class="flex-1 py-3 border border-outline-variant text-on-surface-variant rounded-xl text-sm font-semibold text-center hover:bg-surface-container transition-all">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const qtyInput   = document.querySelector('[name="quantity"]');
+  const priceInput = document.querySelector('[name="unit_price"]');
+  const preview    = document.getElementById('total-preview');
+
+  function updateTotal() {
+    const qty   = parseFloat(qtyInput?.value)   || 0;
+    const price = parseFloat(priceInput?.value) || 0;
+    preview.textContent = '₹' + (qty * price).toLocaleString('en-IN', {minimumFractionDigits: 2});
+  }
+
+  qtyInput?.addEventListener('input', updateTotal);
+  priceInput?.addEventListener('input', updateTotal);
+</script>
+{% endblock %}

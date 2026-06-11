@@ -1,0 +1,202 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load static %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block search_placeholder %}Search transactions...{% endblock %}
+
+{% block extra_css %}{{ block.super }}
+<style>
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .au1{animation:fadeUp .4s ease both;} .au2{animation:fadeUp .4s .06s ease both;}
+  .au3{animation:fadeUp .4s .12s ease both;} .au4{animation:fadeUp .4s .18s ease both;}
+  .tab-btn{padding:9px 18px;border-radius:12px;font-size:13px;font-weight:600;transition:all .18s;display:flex;align-items:center;gap:7px;color:rgba(255,255,255,0.4);}
+  .tab-btn:hover{color:rgba(255,255,255,0.7);}
+  .tab-btn.active{background:rgba(70,72,212,0.2);color:#a5b4fc;border:1px solid rgba(70,72,212,0.25);}
+  .pg-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:12px;font-weight:700;transition:all .15s;color:rgba(255,255,255,0.4);}
+  .pg-btn:hover{background:rgba(70,72,212,0.2);color:#a5b4fc;}
+  .pg-btn.active{background:#4648d4;color:#fff;}
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="px-7 py-6 max-w-[1240px] mx-auto space-y-5 relative z-10">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-start justify-between gap-4 au1">
+    <div>
+      <h1 class="text-[22px] font-black text-white tracking-tight">Sales</h1>
+      <p class="text-[12px] mt-0.5" style="color:rgba(255,255,255,0.4);">Transactions &amp; AI stock movements for <span class="text-brand-400">{{ current_shop.name }}</span></p>
+    </div>
+    <div class="flex gap-3 flex-wrap">
+      <div class="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] text-white" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+        <span class="material-symbols-outlined text-teal-400 text-[16px]">payments</span>Revenue: <strong>{{ total_revenue }}</strong>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] text-white" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+        <span class="material-symbols-outlined text-brand-400 text-[16px]">today</span>Today: <strong>{{ today_count }}</strong>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] text-white" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+        <span class="material-symbols-outlined text-red-400 text-[16px]">trending_down</span>AI Sold: <strong>{{ total_sold }}</strong>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] text-white" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+        <span class="material-symbols-outlined text-teal-400 text-[16px]">add_circle</span>AI Added: <strong>{{ total_added }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 p-1.5 rounded-xl w-fit au2" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);">
+    <a href="?tab=transactions" class="tab-btn {% if tab == 'transactions' or not tab %}active{% endif %}">
+      <span class="material-symbols-outlined text-[17px]">receipt_long</span>Transactions
+    </a>
+    <a href="?tab=ai_logs" class="tab-btn {% if tab == 'ai_logs' %}active{% endif %}">
+      <span class="material-symbols-outlined text-[17px]">psychology</span>AI Stock Actions
+      {% if total_logs %}<span class="px-2 py-0.5 rounded-full text-[10px] font-bold badge-primary">{{ total_logs }}</span>{% endif %}
+    </a>
+  </div>
+
+  <!-- TRANSACTIONS TAB -->
+  {% if tab == 'transactions' or not tab %}
+  <form method="get" class="au3">
+    <input type="hidden" name="tab" value="transactions">
+    <div class="flex flex-wrap gap-3 p-4 rounded-2xl" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
+      <div class="flex items-center gap-2 flex-1 min-w-[160px] px-3 rounded-xl" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);">
+        <span class="material-symbols-outlined text-white/25 text-[16px]">search</span>
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search ID or customer..." style="background:transparent!important;border:none!important;outline:none!important;color:#e8e9f5!important;font-size:13px;padding:9px 0;width:100%;"/>
+      </div>
+      <select name="status" class="px-3 py-2 rounded-xl text-[13px]" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8e9f5;" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        {% for val, label in status_choices %}<option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-white" style="background:rgba(70,72,212,0.5);">
+        <span class="material-symbols-outlined text-[15px]">search</span>Search
+      </button>
+      <a href="?tab=transactions" class="text-[12px] text-brand-400 font-semibold hover:underline self-center">Reset</a>
+    </div>
+  </form>
+
+  <div class="dark-table overflow-hidden au4">
+    <div class="overflow-x-auto custom-scrollbar">
+      <table class="w-full">
+        <thead><tr>
+          <th>Txn ID</th><th>Customer</th><th>Product</th><th>Amount</th><th>Status</th><th>Date</th>
+        </tr></thead>
+        <tbody>
+          {% for txn in transactions %}
+          <tr style="border-top:1px solid rgba(255,255,255,0.05);" class="hover:bg-brand-500/5 transition-colors">
+            <td class="px-5 py-3.5 text-[12px] font-bold text-white font-mono">{{ txn.txn_id }}</td>
+            <td class="px-5 py-3.5">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0" style="background:rgba(70,72,212,0.2);color:#818cf8;">{% if txn.customer %}{{ txn.customer.initials }}{% else %}??{% endif %}</div>
+                <span class="text-[12px] text-white">{% if txn.customer %}{{ txn.customer.name }}{% else %}—{% endif %}</span>
+              </div>
+            </td>
+            <td class="px-5 py-3.5 text-[12px] max-w-[140px] truncate" style="color:rgba(255,255,255,0.4);">{% if txn.product %}{{ txn.product.name }}{% else %}—{% endif %}</td>
+            <td class="px-5 py-3.5 text-[13px] font-bold text-white">₹{{ txn.amount }}</td>
+            <td class="px-5 py-3.5">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold {% if txn.status == 'Completed' %}badge-success{% elif txn.status == 'Processing' %}badge-primary{% elif txn.status == 'Shipped' %}badge-outline{% else %}badge-error{% endif %}">{{ txn.status }}</span>
+            </td>
+            <td class="px-5 py-3.5 text-[11px]" style="color:rgba(255,255,255,0.35);">{{ txn.created_at|date:"M d, Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="py-16 text-center">
+            <span class="material-symbols-outlined text-[44px]" style="color:rgba(255,255,255,0.1);">receipt_long</span>
+            <p class="text-[13px] mt-2" style="color:rgba(255,255,255,0.3);">No transactions found.</p>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-3 flex items-center justify-between" style="border-top:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
+      <p class="text-[11px]" style="color:rgba(255,255,255,0.3);">Showing <strong class="text-white">{{ txn_page_start }}–{{ txn_page_end }}</strong> of <strong class="text-white">{{ total_transactions }}</strong></p>
+      <div class="flex items-center gap-1.5">
+        {% if txn_has_previous %}<a href="?tab=transactions&page={{ transactions.previous_page_number }}&status={{ selected_status }}&q={{ search_query }}" class="pg-btn" style="border:1px solid rgba(255,255,255,0.1);"><span class="material-symbols-outlined text-[16px]">chevron_left</span></a>{% else %}<span class="pg-btn" style="opacity:.3;"><span class="material-symbols-outlined text-[16px]">chevron_left</span></span>{% endif %}
+        {% for p in txn_page_range %}{% if p == txn_current_page %}<span class="pg-btn active">{{ p }}</span>{% elif p == '…' %}<span class="px-1 text-white/20 text-[11px]">…</span>{% else %}<a href="?tab=transactions&page={{ p }}&status={{ selected_status }}&q={{ search_query }}" class="pg-btn">{{ p }}</a>{% endif %}{% endfor %}
+        {% if txn_has_next %}<a href="?tab=transactions&page={{ transactions.next_page_number }}&status={{ selected_status }}&q={{ search_query }}" class="pg-btn" style="border:1px solid rgba(255,255,255,0.1);"><span class="material-symbols-outlined text-[16px]">chevron_right</span></a>{% else %}<span class="pg-btn" style="opacity:.3;"><span class="material-symbols-outlined text-[16px]">chevron_right</span></span>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- AI LOGS TAB -->
+  {% if tab == 'ai_logs' %}
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 au2">
+    <div class="card p-5"><div class="flex items-center gap-3 mb-3"><div class="w-9 h-9 rounded-xl badge-error flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">trending_down</span></div><p class="text-[9px] uppercase tracking-wider font-bold" style="color:rgba(255,255,255,0.3);">Total Sold</p></div><p class="text-[26px] font-black text-white leading-none">{{ total_sold }}</p><p class="text-[10px] mt-1" style="color:rgba(255,255,255,0.3);">units via AI</p></div>
+    <div class="card p-5"><div class="flex items-center gap-3 mb-3"><div class="w-9 h-9 rounded-xl badge-success flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">add_circle</span></div><p class="text-[9px] uppercase tracking-wider font-bold" style="color:rgba(255,255,255,0.3);">Total Added</p></div><p class="text-[26px] font-black text-white leading-none">{{ total_added }}</p><p class="text-[10px] mt-1" style="color:rgba(255,255,255,0.3);">units via AI</p></div>
+    <div class="card p-5"><div class="flex items-center gap-3 mb-3"><div class="w-9 h-9 rounded-xl badge-primary flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">psychology</span></div><p class="text-[9px] uppercase tracking-wider font-bold" style="color:rgba(255,255,255,0.3);">Total Actions</p></div><p class="text-[26px] font-black text-white leading-none">{{ total_logs }}</p><p class="text-[10px] mt-1" style="color:rgba(255,255,255,0.3);">all AI events</p></div>
+    <div class="card p-5"><div class="flex items-center gap-3 mb-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(124,58,237,0.15);color:#a78bfa;"><span class="material-symbols-outlined text-[18px]">store</span></div><p class="text-[9px] uppercase tracking-wider font-bold" style="color:rgba(255,255,255,0.3);">Shop</p></div><p class="text-[13px] font-bold text-white truncate">{{ current_shop.name }}</p><p class="text-[10px] mt-1" style="color:rgba(255,255,255,0.3);">{{ current_shop.shop_type_label }}</p></div>
+  </div>
+
+  <form method="get" class="au3">
+    <input type="hidden" name="tab" value="ai_logs">
+    <div class="flex flex-wrap gap-3 p-4 rounded-2xl" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
+      <div class="flex items-center gap-2 flex-1 min-w-[160px] px-3 rounded-xl" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);">
+        <span class="material-symbols-outlined text-white/25 text-[16px]">search</span>
+        <input type="text" name="lq" value="{{ log_query }}" placeholder="Search product or note..." style="background:transparent!important;border:none!important;outline:none!important;color:#e8e9f5!important;font-size:13px;padding:9px 0;width:100%;"/>
+      </div>
+      <select name="action" class="px-3 py-2 rounded-xl text-[13px]" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#e8e9f5;" onchange="this.form.submit()">
+        <option value="">All Actions</option>
+        <option value="sell" {% if log_action == 'sell' %}selected{% endif %}>Sell</option>
+        <option value="add" {% if log_action == 'add' %}selected{% endif %}>Restock / Add</option>
+      </select>
+      <button type="submit" class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-bold text-white" style="background:rgba(70,72,212,0.5);">
+        <span class="material-symbols-outlined text-[15px]">search</span>Search
+      </button>
+      <a href="?tab=ai_logs" class="text-[12px] text-brand-400 font-semibold hover:underline self-center">Reset</a>
+    </div>
+  </form>
+
+  <div class="dark-table overflow-hidden au4">
+    <div class="overflow-x-auto custom-scrollbar">
+      <table class="w-full">
+        <thead><tr>
+          <th>Action</th><th>Product</th><th>Category</th><th class="text-center">Qty</th><th class="text-center">Before</th><th class="text-center">After</th><th>Note</th><th>Time</th>
+        </tr></thead>
+        <tbody>
+          {% for log in stock_logs %}
+          <tr style="border-top:1px solid rgba(255,255,255,0.05);" class="hover:bg-brand-500/5 transition-colors">
+            <td class="px-5 py-3.5">
+              {% if log.action == 'sell' %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold badge-error"><span class="material-symbols-outlined text-[12px]">trending_down</span>Sold</span>
+              {% else %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold badge-success"><span class="material-symbols-outlined text-[12px]">add_circle</span>Added</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3.5">
+              <p class="text-[12px] font-semibold text-white">{% if log.product %}{{ log.product.name }}{% else %}—{% endif %}</p>
+              {% if log.product and log.product.sku %}<p class="text-[10px] font-mono" style="color:rgba(255,255,255,0.3);">{{ log.product.sku }}</p>{% endif %}
+            </td>
+            <td class="px-5 py-3.5 text-[12px]" style="color:rgba(255,255,255,0.4);">{% if log.category %}{{ log.category.name }}{% else %}—{% endif %}</td>
+            <td class="px-5 py-3.5 text-center">
+              <span class="w-9 h-8 flex items-center justify-center rounded-lg font-bold text-[12px] mx-auto {% if log.action == 'sell' %}badge-error{% else %}badge-success{% endif %}">
+                {% if log.action == 'sell' %}-{% else %}+{% endif %}{{ log.quantity }}
+              </span>
+            </td>
+            <td class="px-5 py-3.5 text-center font-mono text-[12px]" style="color:rgba(255,255,255,0.4);">{{ log.stock_before }}</td>
+            <td class="px-5 py-3.5 text-center">
+              <span class="font-mono font-bold text-[12px] {% if log.stock_after == 0 %}text-red-400{% elif log.stock_after <= 10 %}text-amber-400{% else %}text-teal-400{% endif %}">{{ log.stock_after }}</span>
+            </td>
+            <td class="px-5 py-3.5 max-w-[160px]"><p class="text-[11px] truncate" style="color:rgba(255,255,255,0.3);" title="{{ log.note }}">{{ log.note|default:"—" }}</p></td>
+            <td class="px-5 py-3.5 text-[11px] whitespace-nowrap" style="color:rgba(255,255,255,0.3);">{{ log.created_at|date:"M d, Y H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="py-16 text-center">
+            <span class="material-symbols-outlined text-[44px]" style="color:rgba(255,255,255,0.1);">psychology</span>
+            <p class="text-[13px] mt-2" style="color:rgba(255,255,255,0.3);">No AI stock actions yet.</p>
+            <p class="text-[11px] mt-1" style="color:rgba(255,255,255,0.2);">Use the AI Assistant to sell or restock.</p>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-3 flex items-center justify-between" style="border-top:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
+      <p class="text-[11px]" style="color:rgba(255,255,255,0.3);">Showing <strong class="text-white">{{ log_page_start }}–{{ log_page_end }}</strong> of <strong class="text-white">{{ total_logs }}</strong></p>
+      <div class="flex items-center gap-1.5">
+        {% if log_has_previous %}<a href="?tab=ai_logs&lpage={{ stock_logs.previous_page_number }}&action={{ log_action }}&lq={{ log_query }}" class="pg-btn" style="border:1px solid rgba(255,255,255,0.1);"><span class="material-symbols-outlined text-[16px]">chevron_left</span></a>{% else %}<span class="pg-btn" style="opacity:.3;"><span class="material-symbols-outlined text-[16px]">chevron_left</span></span>{% endif %}
+        {% for p in log_page_range %}{% if p == log_current_page %}<span class="pg-btn active">{{ p }}</span>{% elif p == '…' %}<span class="px-1 text-white/20 text-[11px]">…</span>{% else %}<a href="?tab=ai_logs&lpage={{ p }}&action={{ log_action }}&lq={{ log_query }}" class="pg-btn">{{ p }}</a>{% endif %}{% endfor %}
+        {% if log_has_next %}<a href="?tab=ai_logs&lpage={{ stock_logs.next_page_number }}&action={{ log_action }}&lq={{ log_query }}" class="pg-btn" style="border:1px solid rgba(255,255,255,0.1);"><span class="material-symbols-outlined text-[16px]">chevron_right</span></a>{% else %}<span class="pg-btn" style="opacity:.3;"><span class="material-symbols-outlined text-[16px]">chevron_right</span></span>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
